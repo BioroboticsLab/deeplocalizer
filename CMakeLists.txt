@@ -118,6 +118,7 @@ include_directories(
     SYSTEM ${Caffe_INCLUDE_DIRS}
     SYSTEM ${LMDB_INCLUDE_DIRS}
     SYSTEM ${CUDA_INCLUDE_DIRS}
+    SYSTEM ${DEEP_CLASSIFIER_INCLUDE_DIR}
 )
 set(general-libs
     ${OpenCV_LIBS}
@@ -127,6 +128,7 @@ set(general-libs
     ${LMDB_LIBRARIES}
     ${CUDA_LIBRARIES}
 )
+
 set(tagger-libs
     deeplocalizer-tagger
     Qt5::Core
@@ -136,13 +138,12 @@ set(tagger-libs
     ${general-libs}
 )
 
-set(classifier-libs
-    deeplocalizer-classifier
-    ${general-libs})
-
-set(test-libs
-    ${tagger-libs}
-    ${classifier-libs})
-enable_testing(true)
 add_subdirectory(source)
+set(test-libs ${tagger-libs} deeplocalizer-classifier)
+
+enable_testing(true)
+
+message(${DEEP_CLASSIFIER_LD_DIR})
+link_directories(${DEEP_CLASSIFIER_LD_DIR})
+
 add_subdirectory(test)

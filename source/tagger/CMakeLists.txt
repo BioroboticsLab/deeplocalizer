@@ -5,12 +5,7 @@ file(GLOB hdr ${PROJECT_SOURCE_DIR}/include/deeplocalizer/tagger/*.h)
 file(GLOB_RECURSE ui RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.ui)
 file(GLOB_RECURSE qrc RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.qrc)
 
-set(${hdr} ${PROJECT_SOURCE_DIR}/include/deeplocalizer/utils.h)
-
-include_directories(
-    ${PROJECT_SOURCE_DIR}/include/deeplocalizer/tagger/
-    ${PROJECT_SOURCE_DIR}/include/deeplocalizer/common/
-)
+include_directories(${PROJECT_SOURCE_DIR}/include/deeplocalizer/tagger/)
 
 set(src ${src} ${PIPELINE_SRC})
 
@@ -22,12 +17,6 @@ qt5_wrap_ui(UI_HEADERS ${ui})
 
 add_library(deeplocalizer-tagger
     ${src} ${hdr} ${UI_RESOURCES} ${UI_HEADERS})
-
-#set(src-tagger ${src})
-#set(hdr-tagger ${hdr})
-#
-#add_library(tagger-lib
-#    ${src-tagger} ${hdr-tagger} ${UI_RESOURCES} ${UI_HEADERS})
 
 add_executable(tagger "tagger.cpp"
      ${hdr} ${UI_RESOURCES} ${UI_HEADERS})

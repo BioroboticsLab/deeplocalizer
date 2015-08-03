@@ -6,8 +6,6 @@ add_subdirectory(scripts)
 
 include_directories(
     ${PROJECT_SOURCE_DIR}/include/deeplocalizer/tagger/
-    ${PROJECT_SOURCE_DIR}/include/deeplocalizer/common/
-    ${PROJECT_SOURCE_DIR}/include/deeplocalizer/classifier/
 )
 
 file(GLOB tests RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} Test*.cpp)
