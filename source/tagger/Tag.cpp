@@ -1,6 +1,3 @@
-//
-// Created by leon on 19.05.15.
-//
 
 #include "Tag.h"
 

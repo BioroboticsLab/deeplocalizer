@@ -11,10 +11,10 @@
 
 namespace deeplocalizer {
 
-const int TrainsetGenerator::MAX_TRANSLATION = TAG_WIDTH / 3;
+const int TrainsetGenerator::MAX_TRANSLATION = TAG_WIDTH / 7;
 const int TrainsetGenerator::MIN_TRANSLATION = -TrainsetGenerator::MAX_TRANSLATION;
 const int TrainsetGenerator::MIN_AROUND_WRONG = TAG_WIDTH / 2;
-const int TrainsetGenerator::MAX_AROUND_WRONG = TAG_WIDTH / 2 + 200;
+const int TrainsetGenerator::MAX_AROUND_WRONG = TAG_WIDTH / 2 + 1000;
 
 TrainsetGenerator::TrainsetGenerator() :
     TrainsetGenerator(std::make_unique<DevNullWriter>())
@@ -141,7 +141,6 @@ std::vector<cv::Rect> TrainsetGenerator::getNearbyTagBoxes(const Tag &tag,
                         2*MAX_AROUND_WRONG+2*TAG_WIDTH,
                         2*MAX_AROUND_WRONG+2*TAG_WIDTH};
     std::vector<cv::Rect> nearbyBoxes;
-    nearbyBoxes.reserve(10);
     for(const auto & other_tag: desc.getTags()) {
         if((other_tag.getBoundingBox() & nearbyArea).area()) {
             auto center = other_tag.center();

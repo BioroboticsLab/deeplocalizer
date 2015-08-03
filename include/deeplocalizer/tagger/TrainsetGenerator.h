@@ -24,10 +24,13 @@ public:
     TrainsetGenerator operator=(TrainsetGenerator && other);
     ~TrainsetGenerator() = default;
 
-    const int uniform_wrong_tags = 10;
+    // number of rotated, translated samples per actual tag
     unsigned int samples_per_tag = 32;
+    // number of wrong samples per actual tag
     unsigned int wrong_samples_per_tag = 32;
-    const int shrinking = 32;
+    // if positive allow wrong sample to reach into the bounding box of the tag
+    const int shrinking = 30;
+
     unsigned long current_idx;
     boost::filesystem::path output_dir;
 

@@ -18,8 +18,8 @@ class QPainter;
 
 namespace deeplocalizer {
 
-const int TAG_WIDTH = 100;
-const int TAG_HEIGHT = 100;
+const int TAG_WIDTH = 60;
+const int TAG_HEIGHT = 60;
 
 
 enum IsTag{
