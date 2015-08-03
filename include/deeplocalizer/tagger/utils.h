@@ -1,5 +1,5 @@
-#ifndef DEEP_LOCALIZER_QTHELPER_H
-#define DEEP_LOCALIZER_QTHELPER_H
+#ifndef DEEP_LOCALIZER_UTILS_H
+#define DEEP_LOCALIZER_UTILS_H
 
 
 #include <iostream>
@@ -92,4 +92,4 @@ inline std::vector<unsigned long> shuffledIndecies(unsigned long n) {
     return indecies;
 }
 }
-#endif //DEEP_LOCALIZER_QTHELPER_H
+#endif //DEEP_LOCALIZER_UTILS_H
