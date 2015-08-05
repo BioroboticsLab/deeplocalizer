@@ -14,7 +14,8 @@ namespace deeplocalizer {
 
 class DataWriter {
 public:
-    virtual void write(const std::vector <TrainDatum> &dataset, Dataset::Phase phase) = 0;
+    virtual void write(const std::vector<TrainDatum> &dataset,
+                       const Dataset::Phase phase) = 0;
     virtual ~DataWriter() = default;
     static std::unique_ptr<DataWriter> fromSaveFormat(
             const std::string &output_dir,
@@ -28,7 +29,8 @@ protected:
 class ImageWriter : public DataWriter {
 public:
     ImageWriter(const std::string & output_dir);
-    virtual void write(const std::vector<TrainDatum> &dataset, Dataset::Phase phase);
+    virtual void write(const std::vector<TrainDatum> &dataset,
+                       const Dataset::Phase phase);
     virtual ~ImageWriter() = default;
 private:
     boost::filesystem::path _output_dir;
@@ -60,7 +62,8 @@ private:
 class LMDBWriter : public DataWriter {
 public:
     LMDBWriter(const std::string &output_dir);
-    virtual void write(const std::vector <TrainDatum> &dataset, Dataset::Phase phase);
+    virtual void write(const std::vector<TrainDatum> &dataset,
+                       const Dataset::Phase phase);
     virtual ~LMDBWriter();
 
 private:
@@ -87,7 +90,8 @@ private:
 class AllFormatWriter : public DataWriter {
 public:
     AllFormatWriter(const std::string &output_dir);
-    virtual void write(const std::vector<TrainDatum> &dataset, Dataset::Phase phase);
+    virtual void write(const std::vector<TrainDatum> &dataset,
+                       const Dataset::Phase phase);
 
 private:
     std::unique_ptr<LMDBWriter> _lmdb_writer;
@@ -95,7 +99,7 @@ private:
 };
 
 class DevNullWriter : public DataWriter {
-    virtual void write(const std::vector<TrainDatum> &, Dataset::Phase) {}
+    virtual void write(const std::vector<TrainDatum> &, const Dataset::Phase) {}
 };
 
 }

@@ -35,7 +35,8 @@ ImageWriter::ImageWriter(const std::string &output_dir)
     _train_stream.open((_train_dir / "train.txt").string());
 }
 
-void ImageWriter::write(const std::vector<TrainDatum> &data, Dataset::Phase phase) {
+void ImageWriter::write(const std::vector<TrainDatum> &data,
+                        const Dataset::Phase phase) {
     writeImages(data, phase);
     writeLabelFile(data, phase);
 }
@@ -104,7 +105,8 @@ unsigned long swap(unsigned long i) {
     return b0 | b1 | b2 | b3 | b4 | b5 | b6 | b7;
 }
 
-void LMDBWriter::write(const std::vector <TrainDatum> &data, Dataset::Phase phase) {
+void LMDBWriter::write(const std::vector<TrainDatum> &data,
+                       const Dataset::Phase phase) {
     const size_t n = 1024;
     auto mdb_env = getMDB_env(phase);
     auto & mutex = getMutex(phase);
@@ -156,7 +158,8 @@ AllFormatWriter::AllFormatWriter(const std::string &output_dir) :
 {
 }
 
-void AllFormatWriter::write(const std::vector <TrainDatum> &dataset, Dataset::Phase phase) {
+void AllFormatWriter::write(const std::vector<TrainDatum> &dataset,
+                            const Dataset::Phase phase) {
     _lmdb_writer->write(dataset, phase);
     _image_writer->write(dataset, phase);
 }

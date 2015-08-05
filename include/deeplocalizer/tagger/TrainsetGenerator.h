@@ -45,25 +45,26 @@ public:
     void trueSamples(const ImageDesc & desc, const Tag &tag, const cv::Mat & subimage,
                      std::vector<TrainDatum> & train_data);
     cv::Mat rotate(const cv::Mat & src, double degrees);
-    void process(const std::vector<ImageDesc> &descs);
+    void process(const std::vector<ImageDesc> &descs,
+                                    Dataset::Phase phase);
 
     std::vector<ImagePhasePair>
-    groupTestTrain(const std::vector<ImageDesc> & descs);
+    splitTestTrain(const std::vector<ImageDesc> &descs);
 
     template<typename InputIt>
-    void process(InputIt begin, InputIt end) {
+    void process(InputIt begin, InputIt end, const Dataset::Phase phase) {
+        std::vector<TrainDatum> data;
         for(InputIt iter = begin; iter != end; iter++) {
-            std::vector<TrainDatum> data;
-            ImagePhasePair elem = *iter;
-            const ImageDesc & desc = elem.first;
-            Dataset::Phase phase = elem.second;
+            const ImageDesc & desc = *iter;
             process(desc, data);
             _writer->write(data, phase);
             incrementDone();
+            data.clear();
         }
     }
 
-    void processParallel(const std::vector<ImageDesc> &desc);
+    void processParallel(const std::vector<ImageDesc> &desc,
+                         const Dataset::Phase phase);
     void process(const ImageDesc & desc,
                  std::vector<TrainDatum> & train_data);
 signals:

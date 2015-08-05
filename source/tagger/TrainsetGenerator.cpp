@@ -101,6 +101,7 @@ void TrainsetGenerator::trueSamples(const ImageDesc &desc,
 void TrainsetGenerator::process(const ImageDesc &desc,
                                     std::vector<TrainDatum> &train_data) {
     trueSamples(desc, train_data);
+    std::cout << "wrongSamples" << std::endl;
     wrongSamples(desc, train_data);
 }
 void TrainsetGenerator::wrongSamplesAround(const Tag &tag,
@@ -224,17 +225,16 @@ int TrainsetGenerator::wrongAroundCoordinate() {
 TrainsetGenerator TrainsetGenerator::operator=(TrainsetGenerator &&other) {
     return TrainsetGenerator(std::move(other));
 }
-void TrainsetGenerator::process(const std::vector<ImageDesc> &descs) {
-    auto grouped = groupTestTrain(descs);
-    return process(grouped.cbegin(), grouped.cend());
+void TrainsetGenerator::process(const std::vector<ImageDesc> &descs,
+                                Dataset::Phase phase) {
+    return process(descs.cbegin(), descs.cend(), phase);
 }
 
-
-void TrainsetGenerator::processParallel(const std::vector<ImageDesc> & img_descs) {
-    using Iter = std::vector<ImagePhasePair>::const_iterator;
-    auto grouped = groupTestTrain(img_descs);
+void TrainsetGenerator::processParallel(const std::vector<ImageDesc> &img_descs,
+                                        const Dataset::Phase phase) {
+    using Iter = std::vector<ImageDesc>::const_iterator;
     std::vector<std::thread> threads;
-    auto fn = std::mem_fn<void(Iter, Iter)>(&TrainsetGenerator::process<Iter>);
+    auto fn = std::mem_fn<void(Iter, Iter, const Dataset::Phase)>(&TrainsetGenerator::process<Iter>);
 
     _start_time = std::chrono::system_clock::now();
     _n_todo = img_descs.size();
@@ -243,14 +243,16 @@ void TrainsetGenerator::processParallel(const std::vector<ImageDesc> & img_descs
 
     size_t n_cpus = size_t(std::thread::hardware_concurrency()*2);
     if (n_cpus == 0) n_cpus = 1;
-    size_t per_cpu = grouped.size() / n_cpus;
-    for(size_t i = 0; i < n_cpus; i++) {
-        auto end = grouped.cbegin() + per_cpu*(i+1);
+    size_t per_cpu = img_descs.size() / n_cpus;
+    for(size_t i = 0; i < n_cpus && i < img_descs.size(); i++) {
+        auto begin = img_descs.cbegin() + per_cpu*i;
+        auto end = img_descs.cbegin() + per_cpu*(i+1);
         if (i + 1 == n_cpus) {
-            end = grouped.cend();
+            end = img_descs.cend();
         }
+        std::cout << "start thread: " << i << std::endl << std::endl;
         threads.emplace_back(
-                std::thread(fn, this, grouped.cbegin() + per_cpu*i, end)
+                std::thread(fn, this, begin, end, phase)
         );
     }
     for(auto &t: threads) {
@@ -261,22 +263,5 @@ void TrainsetGenerator::processParallel(const std::vector<ImageDesc> & img_descs
 void TrainsetGenerator::incrementDone() {
     double done = _n_done.fetch_add(1);
     printProgress(_start_time, (done+1)/_n_todo);
-}
-std::vector<ImagePhasePair>
-TrainsetGenerator::groupTestTrain(const std::vector<ImageDesc> & descs) {
-    size_t n = descs.size();
-    size_t n_test = std::lround(n * Dataset::TEST_PARTITION);
-    size_t train_end = n - n_test;
-    size_t test_begin = train_end;
-    std::vector<ImagePhasePair> grouped;
-    for(size_t i = 0; i < train_end; i++) {
-        const ImageDesc & desc = descs.at(i);
-        grouped.emplace_back(std::cref(desc), Dataset::Train);
-    }
-    for(size_t i = test_begin; i < n; i++) {
-        const ImageDesc & desc = descs.at(i);
-        grouped.emplace_back(std::cref(desc), Dataset::Test);
-    }
-    return grouped;
 }
 }
