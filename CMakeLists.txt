@@ -4,7 +4,41 @@ cmake_policy(SET CMP0020 NEW)
 cmake_policy(SET CMP0009 NEW)
 
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
-project(deep-localizer)
+project(deeplocalizer_tagger)
+# Required CPM Setup - no need to modify - See: https://github.com/iauns/cpm
+#------------------------------------------------------------------------------
+set(CPM_DIR "${CMAKE_CURRENT_BINARY_DIR}/cpm-packages" CACHE TYPE STRING)
+find_package(Git)
+if(NOT GIT_FOUND)
+    message(FATAL_ERROR "CPM requires Git.")
+endif()
+if (NOT EXISTS ${CPM_DIR}/CPM.cmake)
+    message(STATUS "Cloning repo (https://github.com/iauns/cpm)")
+    execute_process(
+            COMMAND "${GIT_EXECUTABLE}" clone https://github.com/iauns/cpm ${CPM_DIR}
+            RESULT_VARIABLE error_code
+            OUTPUT_QUIET ERROR_QUIET)
+    if(error_code)
+        message(FATAL_ERROR "CPM failed to get the hash for HEAD")
+    endif()
+endif()
+include(${CPM_DIR}/CPM.cmake)
+
+CPM_AddModule("cpm_catch"
+    GIT_REPOSITORY "https://github.com/bcachet/cpm-catch")
+
+CPM_AddModule("Pipeline"
+    GIT_REPOSITORY "git@maserati.mi.fu-berlin.de:pipeline"
+    GIT_TAG "cpm"
+)
+
+CPM_AddModule("deeplocalizer_classifier"
+    GIT_REPOSITORY "https://github.com/BioroboticsLab/deeplocalizer_classifier.git"
+    GIT_TAG "cpm"
+)
+
+CPM_Finish()
+
 
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/ ${CMAKE_MODULE_PATH})
 
@@ -105,8 +139,6 @@ set(CMAKE_AUTOMOC ON)
 add_definitions(${Qt5Widgets_DEFINITIONS})
 
 
-add_subdirectory(deps)
-
 # include deps dependecies as SYSTEM headers to prevent warnings from
 # deps files. unfortunatelly, this has no effect when using MSVC.
 include_directories(
@@ -120,30 +152,24 @@ include_directories(
     SYSTEM ${CUDA_INCLUDE_DIRS}
     SYSTEM ${DEEP_CLASSIFIER_INCLUDE_DIR}
 )
-set(general-libs
+
+set(libs
     ${OpenCV_LIBS}
     ${Boost_LIBRARIES}
     ${CMAKE_THREAD_LIBS_INIT}
     ${Caffe_LIBRARIES}
     ${LMDB_LIBRARIES}
     ${CUDA_LIBRARIES}
-)
-
-set(tagger-libs
-    deeplocalizer-tagger
     Qt5::Core
     Qt5::Widgets
     Qt5::OpenGL
     ${OPENGL_LIBRARIES}
-    ${general-libs}
+    ${CPM_LIBRARIES}
 )
 
-add_subdirectory(source)
-set(test-libs ${tagger-libs} deeplocalizer-classifier)
+add_subdirectory(source/tagger)
+set(test-libs ${libs} deeplocalizer-tagger)
 
 enable_testing(true)
-
-message(${DEEP_CLASSIFIER_LD_DIR})
-link_directories(${DEEP_CLASSIFIER_LD_DIR})
 
 add_subdirectory(test)

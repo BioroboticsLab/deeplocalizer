@@ -7,32 +7,30 @@ file(GLOB_RECURSE qrc RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.qrc)
 
 include_directories(${PROJECT_SOURCE_DIR}/include/deeplocalizer/tagger/)
 
-set(src ${src} ${PIPELINE_SRC})
-
 qt5_wrap_cpp(MOC_HDR ${hdr})
-
 
 qt5_add_resources(UI_RESOURCES ${qrc})
 qt5_wrap_ui(UI_HEADERS ${ui})
 
 add_library(deeplocalizer-tagger
     ${src} ${hdr} ${UI_RESOURCES} ${UI_HEADERS})
+target_link_libraries(deeplocalizer-tagger ${libs})
 
 add_executable(tagger "tagger.cpp"
      ${hdr} ${UI_RESOURCES} ${UI_HEADERS})
 
-target_link_libraries(tagger ${tagger-libs})
+target_link_libraries(tagger deeplocalizer-tagger)
 
 add_executable(add_border "add_border.cpp" ${hdr} ${UI_RESOURCES} ${UI_HEADERS})
-target_link_libraries(add_border ${tagger-libs})
+target_link_libraries(add_border deeplocalizer-tagger)
 
 add_executable(generate_proposals "generate_proposals.cpp"
      ${hdr} ${UI_RESOURCES} ${UI_HEADERS})
 
-target_link_libraries(generate_proposals ${tagger-libs})
+target_link_libraries(generate_proposals deeplocalizer-tagger)
 
 
 add_executable(generate_dataset "generate_dataset.cpp"
      ${hdr} ${UI_RESOURCES} ${UI_HEADERS})
-target_link_libraries(generate_dataset ${tagger-libs})
+target_link_libraries(generate_dataset deeplocalizer-tagger)
 

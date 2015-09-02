@@ -8,7 +8,7 @@
 #include "catch.hpp"
 #include <opencv2/highgui/highgui.hpp>
 #include <utils.h>
-#include <DataReader.h>
+#include "deeplocalizer/classifier/DataReader.h"
 #include <caffe/util/io.hpp>
 #include "TrainsetGenerator.h"
 
