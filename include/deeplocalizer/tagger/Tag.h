@@ -97,6 +97,9 @@ private:
         ar & BOOST_SERIALIZATION_NVP(_ellipse);
         ar & BOOST_SERIALIZATION_NVP(_tag_type);
         auto center = this->center();
+        if(_ellipse) {
+            _ellipse->setCen(TAG_CENTER);
+        }
         _boundingBox = cv::Rect(center.x - TAG_WIDTH/2, center.y - TAG_WIDTH/2,
                                 TAG_WIDTH, TAG_HEIGHT);
     }
