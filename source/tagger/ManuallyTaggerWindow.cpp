@@ -155,7 +155,7 @@ void ManuallyTaggerWindow::setupConnections() {
         box.exec();
     });
     connect(_tagger.get(), &ManuallyTagger::progress, this, &ManuallyTaggerWindow::setProgress);
-    connect(_save_timer, &QTimer::timeout, this, &ManuallyTaggerWindow::save);
+    connect(_save_timer, &QTimer::timeout, this, [this]() { this->save(false); });
     connect(ui->imagesListView, &QListView::clicked, [this](const QModelIndex & idx) {
         _tagger->loadImage(idx.row());
     });
@@ -307,9 +307,15 @@ void ManuallyTaggerWindow::changed() {
     _changed = true;
     updateStatusBar();
 }
-void ManuallyTaggerWindow::save() {
+void ManuallyTaggerWindow::save(bool all_descs) {
     if(_changed) {
         _tagger->save();
+        if (all_descs) {
+        } else {
+            if (_desc) {
+                _desc->save();
+            }
+        }
         _changed = false;
         updateStatusBar();
     }

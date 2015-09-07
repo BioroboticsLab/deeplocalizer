@@ -33,7 +33,7 @@ public slots:
     void scroll();
     void scrollBack();
     void changed();
-    void save();
+    void save(bool all_descs=false);
     void setImage(unsigned long idx, ImageDescPtr desc,
                                         ImagePtr img);
 protected:

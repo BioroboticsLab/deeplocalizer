@@ -89,8 +89,16 @@ void ManuallyTagger::init() {
     }
 }
 
-void ManuallyTagger::save() const {
+void ManuallyTagger::save(bool all_descs) const {
     save(savePath());
+    if (all_descs) {
+        for(auto & desc: _image_descs) {
+            desc->save();
+        }
+    } else {
+        _image_descs.at(_image_idx)->save();
+    }
+
 }
 void ManuallyTagger::save(const std::string & path) const {
     safe_serialization(path, boost::serialization::make_nvp("tagger", *this));

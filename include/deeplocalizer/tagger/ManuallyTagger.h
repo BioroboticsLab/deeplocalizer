@@ -36,7 +36,7 @@ class ManuallyTagger : public QObject {
     Q_OBJECT
 
 public slots:
-    void save() const;
+    void save(bool all_desc=false) const;
     void save(const std::string & path) const;
     void loadNextImage();
     void loadLastImage();
