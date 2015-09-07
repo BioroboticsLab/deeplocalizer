@@ -60,8 +60,8 @@ void WholeImageWidget::findEllipse(Tag &&tag) {
     _newly_added_tags.emplace_back(std::move(tag));
 }
 void WholeImageWidget::tagProcessed(Tag tag) {
-    if(tag.isTag() == IsTag::No) {
-        tag.setIsTag(IsTag::Yes);
+    if(tag.isTag() == TagType::NoTag) {
+        tag.setType(TagType::IsTag);
     }
     if(_deleted_Ids.find(tag.id()) != _deleted_Ids.end()) {
         return;
@@ -166,7 +166,7 @@ void WholeImageWidget::mousePressEvent(QMouseEvent * event) {
         if(!opt_tag) return;
         auto tag = opt_tag.get();
         if (modifier.testFlag(Qt::ControlModifier)) {
-            tag.setIsTag(IsTag::Exclude);
+            tag.setType(TagType::Exclude);
         }
         if (modifier.testFlag(Qt::ShiftModifier)) {
             _tags->push_back(tag);

@@ -22,7 +22,7 @@ public:
             Dataset::Format format);
 protected:
     inline std::pair<std::string, int> toFilenameLabel(const TrainDatum & datum) {
-        return std::make_pair(datum.filename(), datum.tag().isYes());
+        return std::make_pair(datum.filename(), datum.tag().isTag());
     }
 };
 

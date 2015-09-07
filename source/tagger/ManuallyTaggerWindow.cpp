@@ -299,7 +299,7 @@ void ManuallyTaggerWindow::setImage(unsigned long idx, ImageDescPtr desc,
 void ManuallyTaggerWindow::eraseNegativeTags() {
     auto & tags = _desc->getTags();
     tags.erase(std::remove_if(tags.begin(), tags.end(), [](const auto & tag) {
-        return tag.isTag() == IsTag::No;
+        return tag.isNoTag();
     }), tags.end());
 }
 

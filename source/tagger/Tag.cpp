@@ -12,11 +12,14 @@ using boost::optional;
 
 cv::Rect centerBoxAtEllipse(const cv::Rect & bb,
                             const pipeline::Ellipse & ellipse) {
-    cv::Point2i center = ellipse.getCen();
-    cv::Rect box(bb.x + center.x - TAG_WIDTH / 2,
-                 bb.y + center.y - TAG_HEIGHT / 2,
-                 TAG_WIDTH, TAG_HEIGHT);
-    return box;
+    cv::Point2i ellCenter = ellipse.getCen();
+    cv::Point2i center{
+           bb.x + ellCenter.x,
+           bb.x + ellCenter.y,
+    };
+    cv::Point2i leftTopCorner{center.x - TAG_WIDTH / 2,
+                              center.y - TAG_HEIGHT / 2};
+    return  cv::Rect(leftTopCorner, TAG_SIZE);
 }
 
 cv::Rect centerBox(const cv::Rect & bb) {
@@ -44,7 +47,7 @@ Tag::Tag() :  _id(Tag::generateId())
 Tag::Tag(const pipeline::Tag & pipetag) :  _id(Tag::generateId()) {
     boost::optional<pipeline::Ellipse> ellipse;
     for(auto candidate : pipetag.getCandidatesConst()) {
-        if (!ellipse.is_initialized()) {
+        if (!ellipse) {
             ellipse = optional<pipeline::Ellipse>(candidate.getEllipse());
         } else if (ellipse.get() < candidate.getEllipse()) {
             ellipse = optional<pipeline::Ellipse>(candidate.getEllipse());
@@ -56,7 +59,7 @@ Tag::Tag(const pipeline::Tag & pipetag) :  _id(Tag::generateId()) {
         _ellipse.get().setCen(cv::Point2i(TAG_WIDTH/2, TAG_HEIGHT/2));
     } else {
         _boundingBox = centerBox(pipetag.getBox());
-        _is_tag = IsTag::No;
+        _tag_type = TagType::NoTag;
     }
 }
 
@@ -76,9 +79,9 @@ Tag::Tag(cv::Rect boundingBox, optional<pipeline::Ellipse> ellipse) :
 
 void Tag::guessIsTag(int threshold) {
     if(_ellipse.is_initialized() && _ellipse.get().getVote() > threshold) {
-        _is_tag = IsTag::Yes;
+        _tag_type = TagType::IsTag;
     } else {
-        _is_tag = IsTag::No;
+        _tag_type = TagType::NoTag;
     }
 }
 const optional<pipeline::Ellipse> & Tag::getEllipse () const {
@@ -92,19 +95,19 @@ void Tag::setBoundingBox(cv::Rect rect) {
     _boundingBox = rect;
 }
 
-IsTag Tag::isTag() const {
-    return _is_tag;
+TagType Tag::type() const {
+    return _tag_type;
 }
 
-void Tag::setIsTag(IsTag isTag) {
-        this->_is_tag = isTag;
+void Tag::setType(TagType tagtype) {
+        this->_tag_type = tagtype;
 }
 
 void Tag::toggleIsTag() {
-    if (_is_tag == IsTag::Yes) {
-        _is_tag = IsTag::No;
-    } else if (_is_tag == IsTag::No) {
-        _is_tag = IsTag::Yes;
+    if (_tag_type == TagType::IsTag) {
+        _tag_type = TagType::NoTag;
+    } else if (_tag_type == TagType::NoTag) {
+        _tag_type = TagType::IsTag;
     }
 }
 
@@ -113,7 +116,7 @@ bool Tag::operator==(const Tag &other) const {
         auto te = _ellipse.get();
         auto oe = other._ellipse.get();
         return (_boundingBox == other._boundingBox &&
-                _is_tag == other._is_tag &&
+                _tag_type == other._tag_type &&
                 te.getAngle() == oe.getAngle() &&
                 te.getVote() == oe.getVote() &&
                 te.getAxis() == oe.getAxis() &&
@@ -139,11 +142,11 @@ cv::Mat Tag::getSubimage(const cv::Mat & orginal, unsigned int border) const {
 
 void Tag::draw(QPainter & p, int lineWidth) const {
     auto bb = _boundingBox;
-    if (_is_tag == IsTag::Yes) {
+    if (_tag_type == TagType::IsTag) {
         p.setPen(QPen(Qt::green, lineWidth));
-    } else if (_is_tag == IsTag::No) {
+    } else if (_tag_type == TagType::NoTag) {
         p.setPen(QPen(Qt::red, lineWidth));
-    } else if (_is_tag == IsTag::Exclude) {
+    } else if (_tag_type == TagType::Exclude) {
         p.setPen(QPen(Qt::magenta, lineWidth));
     }
     p.drawRect(QRect(bb.x, bb.y, bb.height, bb.width));

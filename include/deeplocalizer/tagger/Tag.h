@@ -20,12 +20,13 @@ namespace deeplocalizer {
 
 const int TAG_WIDTH = 60;
 const int TAG_HEIGHT = 60;
+const cv::Point2i TAG_CENTER{TAG_WIDTH / 2, TAG_HEIGHT / 2};
+const cv::Size2i TAG_SIZE{TAG_WIDTH, TAG_HEIGHT};
 
-
-enum IsTag{
-    Yes,
-    No,
-    Exclude
+enum TagType {
+    IsTag,
+    NoTag,
+    Exclude,
 };
 
 class Tag {
@@ -43,18 +44,18 @@ public:
 
     const boost::optional<pipeline::Ellipse> & getEllipse () const;
 
-    IsTag isTag() const;
-    void setIsTag(IsTag is_tag);
+    TagType type() const;
+    void setType(TagType tagtype);
     void toggleIsTag();
 
     bool isExclude() const {
-        return _is_tag == Exclude;
+        return _tag_type == Exclude;
     }
-    bool isYes() const {
-        return _is_tag == Yes;
+    bool isTag() const {
+        return _tag_type == IsTag;
     }
-    bool isNo() const {
-        return _is_tag == No;
+    bool isNoTag() const {
+        return _tag_type == NoTag;
     }
 
     cv::Point2i center() const {
@@ -75,7 +76,7 @@ private:
     unsigned long _id;
     cv::Rect _boundingBox;
     boost::optional<pipeline::Ellipse> _ellipse;
-    IsTag _is_tag = IsTag::Yes;
+    TagType _tag_type = TagType::IsTag;
 
     static unsigned long generateId();
     static std::atomic_long id_counter;
@@ -86,7 +87,7 @@ private:
     {
         ar & BOOST_SERIALIZATION_NVP(_boundingBox);
         ar & BOOST_SERIALIZATION_NVP(_ellipse);
-        ar & BOOST_SERIALIZATION_NVP(_is_tag);
+        ar & BOOST_SERIALIZATION_NVP(_tag_type);
 
     }
     template<class Archive>
@@ -94,7 +95,7 @@ private:
     {
         ar & BOOST_SERIALIZATION_NVP(_boundingBox);
         ar & BOOST_SERIALIZATION_NVP(_ellipse);
-        ar & BOOST_SERIALIZATION_NVP(_is_tag);
+        ar & BOOST_SERIALIZATION_NVP(_tag_type);
         auto center = this->center();
         _boundingBox = cv::Rect(center.x - TAG_WIDTH/2, center.y - TAG_WIDTH/2,
                                 TAG_WIDTH, TAG_HEIGHT);

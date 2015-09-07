@@ -116,7 +116,7 @@ void PipelineWorker::findEllipse(cv::Mat mat, Tag tag) {
     auto pipelineTags= _ellipseFitter.process({pipeTag});
     Tag tagWithEll(pipelineTags.at(0));
     tagWithEll.setId(tag.id());
-    tagWithEll.setIsTag(tag.isTag());
+    tagWithEll.setType(tag.type());
     emit tagWithEllipseReady(tagWithEll);
 }
 }

@@ -39,7 +39,7 @@ const std::string TrainDatum::filename() const {
     long angle = std::lround(_rotation_angle);
 
     std::string right_or_wrong;
-    if(_tag.isYes()) {
+    if(_tag.isTag()) {
         right_or_wrong = "_right";
     } else {
         right_or_wrong = "_wrong";
@@ -74,7 +74,7 @@ caffe::Datum TrainDatum::toCaffe() const {
     datum.set_height(TAG_HEIGHT);
     datum.set_data(std::string(reinterpret_cast<char*>(&buf[0]),
                       buf.size()));
-    datum.set_label(_tag.isYes());
+    datum.set_label(_tag.isTag());
     datum.set_encoded(true);
     return datum;
 }

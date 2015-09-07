@@ -79,7 +79,7 @@ TrainDatum TrainsetGenerator::trainData(const ImageDesc & desc, const Tag &tag,
 void TrainsetGenerator::trueSamples(
         const ImageDesc & desc, const Tag &tag, const cv::Mat & subimage,
         std::vector<TrainDatum> & train_data) {
-    if(tag.isTag() != IsTag::Yes) return;
+    if(! tag.isTag()) return;
 
     for(unsigned int i = 0; i < samples_per_tag; i++) {
         train_data.emplace_back(trainData(desc, tag, subimage));
@@ -90,7 +90,7 @@ void TrainsetGenerator::trueSamples(const ImageDesc &desc,
                                     std::vector<TrainDatum> &train_data) {
     Image img = Image(desc);
     for(const auto & tag : desc.getTags()) {
-        if(tag.isTag() == IsTag::Yes) {
+        if(tag.isTag()) {
             cv::Mat subimage =  tag.getSubimage(img.getCvMat(), 50);
             trueSamples(desc, tag, subimage, train_data);
         }
@@ -108,7 +108,7 @@ void TrainsetGenerator::wrongSamplesAround(const Tag &tag,
                                            const ImageDesc &desc,
                                            const Image &img,
                                            std::vector<TrainDatum> &train_data) {
-    if(not tag.isYes()) return;
+    if(not tag.isTag()) return;
     unsigned int samples = 0;
     std::vector<cv::Rect> nearbyBoxes = getNearbyTagBoxes(tag, desc);
 
@@ -181,7 +181,7 @@ void TrainsetGenerator::wrongSampleRot90(const Image &img,
                                          const cv::Rect &wrong_box,
                                          std::vector<TrainDatum> &train_data) {
     Tag wrong_tag{wrong_box};
-    wrong_tag.setIsTag(IsTag::No);
+    wrong_tag.setType(TagType::NoTag);
     cv::Mat subimage = wrong_tag.getSubimage(img.getCvMat());
     train_data.emplace_back(TrainDatum(img.filename(), wrong_tag, subimage));
     {
