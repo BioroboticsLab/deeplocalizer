@@ -64,16 +64,15 @@ Tag::Tag(const pipeline::Tag & pipetag) :  _id(Tag::generateId()) {
 }
 
 Tag::Tag(cv::Rect boundingBox) :
-    _id(Tag::generateId()),
-    _boundingBox(std::move(boundingBox)),
-    _ellipse(optional<pipeline::Ellipse>())
+    Tag(boundingBox, optional<pipeline::Ellipse>())
 {
 }
 
 Tag::Tag(cv::Rect boundingBox, optional<pipeline::Ellipse> ellipse) :
         _id(Tag::generateId()),
         _boundingBox(boundingBox),
-        _ellipse(ellipse)
+        _ellipse(ellipse),
+        _tag_type(IsTag)
 {
 }
 
