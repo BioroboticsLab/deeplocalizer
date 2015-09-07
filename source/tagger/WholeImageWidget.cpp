@@ -167,8 +167,11 @@ void WholeImageWidget::mousePressEvent(QMouseEvent * event) {
         auto tag = opt_tag.get();
         if (modifier.testFlag(Qt::ControlModifier)) {
             tag.setType(TagType::Exclude);
+        } else if (modifier.testFlag(Qt::AltModifier)) {
+            tag.setType(TagType::BeeWithoutTag);
         }
-        if (modifier.testFlag(Qt::ShiftModifier)) {
+
+        if (modifier.testFlag(Qt::ShiftModifier) || not tag.isTag()) {
             _tags->push_back(tag);
         } else {
             findEllipse(std::move(tag));

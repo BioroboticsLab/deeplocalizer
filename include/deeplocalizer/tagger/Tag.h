@@ -27,6 +27,7 @@ enum TagType {
     IsTag,
     NoTag,
     Exclude,
+    BeeWithoutTag,
 };
 
 class Tag {
@@ -48,17 +49,20 @@ public:
     void setType(TagType tagtype);
     void toggleIsTag();
 
-    bool isExclude() const {
+    inline bool isExclude() const {
         return _tag_type == Exclude;
     }
-    bool isTag() const {
+    inline bool isTag() const {
         return _tag_type == IsTag;
     }
-    bool isNoTag() const {
+    inline bool isNoTag() const {
         return _tag_type == NoTag;
     }
+    inline bool isBeeWithoutTag() const {
+        return _tag_type == BeeWithoutTag;
+    }
 
-    cv::Point2i center() const {
+    inline cv::Point2i center() const {
         return cv::Point2i{
                 _boundingBox.x + _boundingBox.width  / 2,
                 _boundingBox.y + _boundingBox.height / 2

@@ -141,12 +141,14 @@ cv::Mat Tag::getSubimage(const cv::Mat & orginal, unsigned int border) const {
 
 void Tag::draw(QPainter & p, int lineWidth) const {
     auto bb = _boundingBox;
-    if (_tag_type == TagType::IsTag) {
+    if (isTag()) {
         p.setPen(QPen(Qt::green, lineWidth));
-    } else if (_tag_type == TagType::NoTag) {
+    } else if (isNoTag()) {
         p.setPen(QPen(Qt::red, lineWidth));
-    } else if (_tag_type == TagType::Exclude) {
+    } else if (isExclude()) {
         p.setPen(QPen(Qt::magenta, lineWidth));
+    } else if (isBeeWithoutTag()) {
+        p.setPen(QPen(Qt::cyan, lineWidth));
     }
     p.drawRect(QRect(bb.x, bb.y, bb.height, bb.width));
 }
