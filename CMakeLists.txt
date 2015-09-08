@@ -27,16 +27,18 @@ include(${CPM_DIR}/CPM.cmake)
 CPM_AddModule("cpm_catch"
     GIT_REPOSITORY "https://github.com/bcachet/cpm-catch")
 
+set(USE_DEEPLOCALIZER "0")
+
 CPM_AddModule("Pipeline"
-    GIT_REPOSITORY "git@maserati.mi.fu-berlin.de:pipeline"
-    GIT_TAG "cpm"
+    SOURCE_DIR "/home/leon/uni/vision_swp/pipeline"
+    #GIT_REPOSITORY "git@maserati.mi.fu-berlin.de:pipeline"
+    #GIT_TAG "cpm"
 )
 
 CPM_AddModule("deeplocalizer_classifier"
     GIT_REPOSITORY "https://github.com/BioroboticsLab/deeplocalizer_classifier.git"
     GIT_TAG "cpm"
 )
-
 CPM_Finish()
 
 
