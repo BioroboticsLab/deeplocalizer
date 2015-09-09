@@ -30,7 +30,7 @@ CPM_AddModule("cpm_catch"
 set(USE_DEEPLOCALIZER "1")
 
 CPM_AddModule("Pipeline"
-    GIT_REPOSITORY "git@maserati.mi.fu-berlin.de:pipeline"
+    GIT_REPOSITORY "https://github.com/BioroboticsLab/pipeline.git"
     GIT_TAG "cpm"
 )
 
