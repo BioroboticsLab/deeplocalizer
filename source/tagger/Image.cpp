@@ -135,21 +135,13 @@ Image::Image() {
 }
 
 Image::Image(const ImageDesc & descr) : _filename(descr.filename)  {
+    std::cout << _filename << std::endl;
     _mat = cv::imread(_filename, cv::IMREAD_GRAYSCALE);
 }
 void Image::beesBookPreprocess() {
-    // remove black border left
-    static const int x = 13;
-    static const int y = 0;
-    // remove border on the right
-    static const int width = 4000 - x - 90;
-    // remove border on the bottom
-    static const int height = 3000 - 20;
-    static const cv::Rect box(x, y, width, height);
-    auto croped = _mat(box);
-    auto mat_with_border = cv::Mat(croped.rows + TAG_HEIGHT,
-                                   croped.cols + TAG_WIDTH, CV_8U);
-    cv::copyMakeBorder(croped, mat_with_border,
+    auto mat_with_border = cv::Mat(_mat.rows + TAG_HEIGHT,
+                                   _mat.cols + TAG_WIDTH, CV_8U);
+    cv::copyMakeBorder(_mat, mat_with_border,
                        TAG_HEIGHT / 2, TAG_HEIGHT / 2,
                        TAG_WIDTH  / 2, TAG_WIDTH  / 2,
                        cv::BORDER_REPLICATE | cv::BORDER_ISOLATED);
