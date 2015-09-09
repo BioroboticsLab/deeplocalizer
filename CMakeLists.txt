@@ -30,9 +30,8 @@ CPM_AddModule("cpm_catch"
 set(USE_DEEPLOCALIZER "0")
 
 CPM_AddModule("Pipeline"
-    SOURCE_DIR "/home/leon/uni/vision_swp/pipeline"
-    #GIT_REPOSITORY "git@maserati.mi.fu-berlin.de:pipeline"
-    #GIT_TAG "cpm"
+    GIT_REPOSITORY "git@maserati.mi.fu-berlin.de:pipeline"
+    GIT_TAG "cpm"
 )
 
 CPM_AddModule("deeplocalizer_classifier"
