@@ -15,7 +15,7 @@ cv::Rect centerBoxAtEllipse(const cv::Rect & bb,
     cv::Point2i ellCenter = ellipse.getCen();
     cv::Point2i center{
            bb.x + ellCenter.x,
-           bb.x + ellCenter.y,
+           bb.y + ellCenter.y,
     };
     cv::Point2i leftTopCorner{center.x - TAG_WIDTH / 2,
                               center.y - TAG_HEIGHT / 2};
