@@ -33,7 +33,7 @@ void registerQuit(ProposalGenerator * gen) {
 TEST_CASE( "ProposalGenerator", "[ProposalGenerator]" ) {
     QCoreApplication * qapp = new QCoreApplication(argc, argv);
     std::string img_path{"testdata/with_5_tags.jpeg"};
-    io::path unique_img = io::temp_directory_path() / io::unique_path("%%%%%%%%%.img");
+    io::path unique_img = io::temp_directory_path() / io::unique_path("%%%%%%%%%.jpeg");
     io::copy(img_path, unique_img);
     std::vector<std::string> image_paths = {unique_img.string()};
     gen = new ProposalGenerator(image_paths);
@@ -52,15 +52,15 @@ TEST_CASE( "ProposalGenerator", "[ProposalGenerator]" ) {
         GIVEN("it is finished with processing an image with bees") {
             THEN ("it will give you tags proposals "
                           "and the todo list will be empty") {
-                gen->connect(gen, &ProposalGenerator::finished, [&]() {
+                gen->connect(gen, &ProposalGenerator::finished, gen, [&]() {
                                  REQUIRE(not gen->getProposalImages().empty());
                                  auto &img = gen->getProposalImages().front();
                                  REQUIRE(img.getTags().size() > 0);
                                  finishedEmitted = true;
-                });
-                gen->connect(gen, &ProposalGenerator::finished, [&]() {
+                }, Qt::QueuedConnection);
+                gen->connect(gen, &ProposalGenerator::finished, gen, [&]() {
                     REQUIRE(gen->getBeforePipelineImages().empty());
-                });
+                }, Qt::QueuedConnection);
             }
         }
         gen->processPipeline();
@@ -71,7 +71,7 @@ TEST_CASE( "ProposalGenerator", "[ProposalGenerator]" ) {
         bool finishedEmitted = false;
         GIVEN("an image with tags") {
             THEN(" the tags can be saved and reloaded") {
-                gen->connect(gen, &ProposalGenerator::finished, [&]() {
+                gen->connect(gen, &ProposalGenerator::finished, gen, [&]() {
                     auto load_imgs = ImageDesc::fromPaths(image_paths);
                     REQUIRE(gen->getProposalImages().size() ==
                             load_imgs.size());
@@ -82,7 +82,7 @@ TEST_CASE( "ProposalGenerator", "[ProposalGenerator]" ) {
                         REQUIRE(gen_img == load_img);
                     }
                     finishedEmitted = true;
-                });
+                }, Qt::QueuedConnection);
                 gen->processPipeline();
             }
         }

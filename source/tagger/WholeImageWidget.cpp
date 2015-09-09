@@ -16,31 +16,27 @@ namespace deeplocalizer {
 
 using boost::optional;
 
-WholeImageWidget::WholeImageWidget(QScrollArea *parent) : QWidget(parent) {
-    this->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Ignored);
-    this->resize(this->sizeHint());
-    _parent = parent;
-    init();
-}
+using mattags_t = std::pair<cv::Mat, std::vector<Tag> *>;
+using opt_mattags_t = boost::optional<mattags_t>;
+
+WholeImageWidget::WholeImageWidget(QScrollArea *parent)
+    : WholeImageWidget(parent, boost::optional<mattags_t>())  {}
 
 WholeImageWidget::WholeImageWidget(QScrollArea * parent, cv::Mat mat, std::vector<Tag> * tags) :
-        QWidget(parent)
-{
+        WholeImageWidget(parent, std::pair<cv::Mat, std::vector<Tag> *>(mat, tags))
+{ }
+WholeImageWidget::WholeImageWidget(QScrollArea * parent,
+                                   opt_mattags_t opt_mattags)
+    : QWidget(parent), _pipeline_worker() {
     _parent = parent;
-    this->setTags(mat, tags);
-    init();
+    this->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Ignored);
+    this->resize(this->sizeHint());
+    if(opt_mattags) {
+        auto & mattags = opt_mattags.get();
+        this->setTags(mattags.first, mattags.second);
+    }
 }
 
-void WholeImageWidget::init() {
-    _thread = new QThread;
-    _worker = new PipelineWorker;
-    _worker->moveToThread(_thread);
-    connect(_thread, &QThread::finished, _thread, &QThread::deleteLater);
-    connect(_thread, &QThread::finished, _worker, &QThread::deleteLater);
-    connect(_worker, &PipelineWorker::tagWithEllipseReady, this,
-            &WholeImageWidget::tagProcessed, Qt::QueuedConnection);
-    _thread->start();
-}
 
 optional<Tag> WholeImageWidget::createTag(int x, int y) {
     if(x < TAG_WIDTH / 2 || y < TAG_HEIGHT / 2 ||
@@ -55,8 +51,12 @@ optional<Tag> WholeImageWidget::createTag(int x, int y) {
 }
 
 void WholeImageWidget::findEllipse(Tag &&tag) {
-    QMetaObject::invokeMethod(_worker, "findEllipse", Qt::QueuedConnection,
-                              Q_ARG(cv::Mat, tag.getSubimage(_mat)), Q_ARG(Tag, tag));
+    auto bb = tag.getBoundingBox();
+    auto callback_mem_fn = std::mem_fn(&WholeImageWidget::tagProcessed);
+    _pipeline_worker.findEllipse(tag.getSubimage(_mat), tag, [this](Tag tag) {
+        QMetaObject::invokeMethod(this, "tagProcessed", Qt::QueuedConnection,
+                                  Q_ARG(Tag, tag));
+    });
     _newly_added_tags.emplace_back(std::move(tag));
 }
 void WholeImageWidget::tagProcessed(Tag tag) {

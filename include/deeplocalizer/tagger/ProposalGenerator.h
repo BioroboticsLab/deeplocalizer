@@ -47,8 +47,8 @@ private:
     std::deque<ImageDesc> _images_with_proposals;
     unsigned long _n_images;
 
-    std::vector<QThread *> _threads;
-    std::vector<PipelineWorker *> _workers;
+    std::vector<std::unique_ptr<PipelineWorker>> _workers;
+    std::mutex _with_proposals_mutex;
 };
 }
 

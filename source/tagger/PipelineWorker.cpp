@@ -40,7 +40,10 @@ const std::string PipelineWorker::DEFAULT_JSON_SETTINGS = R"({
         "FIRST_DILATION_SIZE": "10",
         "MAX_TAG_SIZE": "250",
         "MIN_BOUNDING_BOX_SIZE": "100",
-        "SECOND_DILATION_SIZE": "3"
+        "SECOND_DILATION_SIZE": "3",
+        "DEEPLOCALIZER_MODEL_FILE": "/home/leon/uni/vision_swp/deeplocalizer_data/deeplocalizer-model/deploy.prototxt",
+        "DEEPLOCALIZER_PARAM_FILE": "/home/leon/uni/vision_swp/deeplocalizer_data/deeplocalizer-model/latest_iteration.caffemodel",
+        "DEEPLOCALIZER_PROBABILITY_THRESHOLD": "0.691641"
     },
     "ELLIPSEFITTER": {
         "CANNY_INITIAL_HIGH": "25",
@@ -58,20 +61,62 @@ const std::string PipelineWorker::DEFAULT_JSON_SETTINGS = R"({
         }
 })";
 
-PipelineWorker::PipelineWorker() {
-    init(DEFAULT_CONFIG_FILE);
+PipelineWorker::PipelineWorker() :
+   PipelineWorker(DEFAULT_CONFIG_FILE) { }
+
+PipelineWorker::PipelineWorker(const std::string & config_file) :
+    _config_file(config_file), _quit(false),
+    _thread(std::mem_fn(&PipelineWorker::run), this)
+{
 }
 
-PipelineWorker::PipelineWorker(const std::string & config_file) {
-    init(config_file);
+void PipelineWorker::process(ImageDesc img, std::function<void (ImageDesc)> &&callback)
+{
+    std::lock_guard<std::mutex> lk(_mutex_deques);
+    _proposals_todo.emplace_back(std::make_pair(std::move(img), std::move(callback)));
+    _work_cv.notify_all();
 }
 
-void PipelineWorker::init(const std::string & config_file) {
+void PipelineWorker::findEllipse(cv::Mat mat, Tag tag, std::function<void (Tag)> &&callback)
+{
+
+    std::lock_guard<std::mutex> lk(_mutex_deques);
+    _find_ellipse_todo.emplace_back(std::make_tuple(
+                                        std::move(mat),
+                                        std::move(tag),
+                                        std::move(callback)));
+
+    _work_cv.notify_all();
+}
+
+void PipelineWorker::quit()
+{
+    _quit = true;
+    _work_cv.notify_all();
+    _thread.join();
+}
+
+void PipelineWorker::run()
+{
+    setupPipeline();
+    while(! _quit.load()) {
+        if (proposalsWorkToDo()) {
+            processTagsProposals();
+        } else if (findEllipseWorkToDo()) {
+            processFindEllipse();
+        } else {
+            std::unique_lock<std::mutex> lk(_mutex_work_cv);
+            _work_cv.wait(lk);
+        }
+    }
+}
+
+void PipelineWorker::setupPipeline()
+{
     using namespace pipeline;
-    io::path config_path{config_file};
     boost::property_tree::ptree pt;
-    if(io::exists(config_path)) {
-        boost::property_tree::read_json(config_path.string(), pt);
+    if(io::exists(_config_file)) {
+        boost::property_tree::read_json(_config_file.string(), pt);
     } else {
         std::stringstream ss;
         ss << PipelineWorker::DEFAULT_JSON_SETTINGS;
@@ -84,19 +129,23 @@ void PipelineWorker::init(const std::string & config_file) {
     pre_settings.loadValues(pt);
     loc_settings.loadValues(pt);
     ell_settings.loadValues(pt);
+    _preprocessor = std::make_unique<Preprocessor>();
+    _localizer = std::make_unique<Localizer>();
+    _ellipseFitter = std::make_unique<EllipseFitter>();
+    _preprocessor->loadSettings(pre_settings);
+    _localizer->loadSettings(loc_settings);
+    _ellipseFitter->loadSettings(ell_settings);
 
-    _preprocessor.loadSettings(pre_settings);
-    _localizer.loadSettings(loc_settings);
-    _ellipseFitter.loadSettings(ell_settings);
 }
+
 
 std::vector<Tag> PipelineWorker::tagsProposals(ImageDesc & img_descr) {
     Image img{img_descr};
-    cv::Mat preprocced = _preprocessor.process(img.getCvMat());
+    cv::Mat preprocced = _preprocessor->process(img.getCvMat());
     std::vector<pipeline::Tag> localizer_tags =
-            _localizer.process(std::move(img.getCvMat()), std::move(preprocced));
+            _localizer->process(std::move(img.getCvMat()), std::move(preprocced));
     const std::vector<pipeline::Tag> pipeline_tags =
-            _ellipseFitter.process(std::move(localizer_tags));
+            _ellipseFitter->process(std::move(localizer_tags));
     std::vector<Tag> tags;
     for(auto ptag : pipeline_tags) {
         tags.emplace_back(Tag(ptag));
@@ -104,19 +153,43 @@ std::vector<Tag> PipelineWorker::tagsProposals(ImageDesc & img_descr) {
     return tags;
 }
 
-void PipelineWorker::process(ImageDesc img) {
+void PipelineWorker::processTagsProposals()
+{
+    _mutex_deques.lock();
+    ASSERT(not _proposals_todo.empty(), "Expected there is some work to do!");
+    auto & item = _proposals_todo.front();
+    _mutex_deques.unlock();
+    ImageDesc & img = item.first;
     ASSERT(io::exists(img.filename),
            "Could not open file: `" << img.filename << "`");
+    tags_proposals_callback_t callback = item.second;
     img.setTags(this->tagsProposals(img));
-    emit resultReady(img);
+    callback(img);
+    _mutex_deques.lock();
+    _proposals_todo.pop_front();
+    _mutex_deques.unlock();
 }
-void PipelineWorker::findEllipse(cv::Mat mat, Tag tag) {
+
+void PipelineWorker::processFindEllipse() {
+    _mutex_deques.lock();
+    ASSERT(not _find_ellipse_todo.empty(), "Expected there is some work to do!");
+    auto & item = _find_ellipse_todo.front();
+    _mutex_deques.unlock();
+    auto & mat= std::get<cv::Mat>(item);
+    auto & tag = std::get<Tag>(item);
+    auto & callback = std::get<find_ellipse_callback_t>(item);
+    auto bb = tag.getBoundingBox();
+    std::cout << "Find ellipse at " << bb.x << ", " <<  bb.y << std::endl;
     pipeline::Tag pipeTag(tag.getBoundingBox(), 0 /* id */);
     pipeTag.setOrigSubImage(mat);
-    auto pipelineTags= _ellipseFitter.process({pipeTag});
+    auto pipelineTags= _ellipseFitter->process({pipeTag});
     Tag tagWithEll(pipelineTags.at(0));
     tagWithEll.setId(tag.id());
     tagWithEll.setType(tag.type());
-    emit tagWithEllipseReady(tagWithEll);
+    callback(tagWithEll);
+
+    _mutex_deques.lock();
+    _find_ellipse_todo.pop_front();
+    _mutex_deques.unlock();
 }
 }
