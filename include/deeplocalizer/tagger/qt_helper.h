@@ -8,6 +8,9 @@
 
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/imgproc/types_c.h>
+
+Q_DECLARE_METATYPE(cv::Mat)
+
 namespace deeplocalizer {
 QImage cvMatToQImage(const cv::Mat &inMat);
 
@@ -16,8 +19,5 @@ inline QPixmap cvMatToQPixmap(const cv::Mat &inMat) {
 }
 void registerQMetaTypes();
 }
-
-#include <QImage>
-#include <QPixmap>
 
 #endif //DEEP_LOCALIZER_QT_HELPER_H
