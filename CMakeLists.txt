@@ -52,6 +52,7 @@ find_package(Qt5OpenGL REQUIRED)
 find_package(Threads REQUIRED)
 find_package(Boost COMPONENTS system filesystem serialization program_options REQUIRED)
 find_package(Caffe REQUIRED)
+find_package(Glog REQUIRED)
 find_package(LMDB REQUIRED)
 find_package(CUDA REQUIRED)
 
@@ -167,6 +168,7 @@ set(libs
     Qt5::Widgets
     Qt5::OpenGL
     ${OPENGL_LIBRARIES}
+    ${GLOG_LIBRARY}
     ${CPM_LIBRARIES}
 )
 
