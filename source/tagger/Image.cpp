@@ -135,7 +135,6 @@ Image::Image() {
 }
 
 Image::Image(const ImageDesc & descr) : _filename(descr.filename)  {
-    std::cout << _filename << std::endl;
     _mat = cv::imread(_filename, cv::IMREAD_GRAYSCALE);
 }
 void Image::beesBookPreprocess() {

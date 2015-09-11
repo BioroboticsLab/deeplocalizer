@@ -101,7 +101,6 @@ void TrainsetGenerator::trueSamples(const ImageDesc &desc,
 void TrainsetGenerator::process(const ImageDesc &desc,
                                     std::vector<TrainDatum> &train_data) {
     trueSamples(desc, train_data);
-    std::cout << "wrongSamples" << std::endl;
     wrongSamples(desc, train_data);
 }
 void TrainsetGenerator::wrongSamplesAround(const Tag &tag,
@@ -250,7 +249,6 @@ void TrainsetGenerator::processParallel(const std::vector<ImageDesc> &img_descs,
         if (i + 1 == n_cpus) {
             end = img_descs.cend();
         }
-        std::cout << "start thread: " << i << std::endl << std::endl;
         threads.emplace_back(
                 std::thread(fn, this, begin, end, phase)
         );
