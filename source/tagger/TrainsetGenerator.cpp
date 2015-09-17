@@ -11,7 +11,7 @@
 
 namespace deeplocalizer {
 
-const int TrainsetGenerator::MAX_TRANSLATION = TAG_WIDTH / 7;
+const int TrainsetGenerator::MAX_TRANSLATION = TAG_WIDTH / 8;
 const int TrainsetGenerator::MIN_TRANSLATION = -TrainsetGenerator::MAX_TRANSLATION;
 const int TrainsetGenerator::MIN_AROUND_WRONG = TAG_WIDTH / 2;
 const int TrainsetGenerator::MAX_AROUND_WRONG = TAG_WIDTH / 2 + 1000;
@@ -91,7 +91,8 @@ void TrainsetGenerator::trueSamples(const ImageDesc &desc,
     Image img = Image(desc);
     for(const auto & tag : desc.getTags()) {
         if(tag.isTag()) {
-            cv::Mat subimage =  tag.getSubimage(img.getCvMat(), 50);
+            static size_t border = TAG_WIDTH / 2;
+            cv::Mat subimage =  tag.getSubimage(img.getCvMat(), border);
             trueSamples(desc, tag, subimage, train_data);
         }
     }
