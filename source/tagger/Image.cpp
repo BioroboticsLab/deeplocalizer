@@ -101,6 +101,7 @@ std::vector<ImageDesc> ImageDesc::fromPaths(const std::vector<std::string> paths
         desc.setSavePathExtension(image_desc_extension);
         if(io::exists(desc.savePath())) {
             desc = *ImageDesc::load(desc.savePath());
+            desc.filename = path;
         }
         descs.push_back(desc);
     }
@@ -135,8 +136,10 @@ Image::Image() {
 }
 
 Image::Image(const ImageDesc & descr) : _filename(descr.filename)  {
+    ASSERT(io::exists(_filename), "Cannot open file: " << _filename);
     _mat = cv::imread(_filename, cv::IMREAD_GRAYSCALE);
 }
+
 void Image::beesBookPreprocess() {
     auto mat_with_border = cv::Mat(_mat.rows + TAG_HEIGHT,
                                    _mat.cols + TAG_WIDTH, CV_8U);
