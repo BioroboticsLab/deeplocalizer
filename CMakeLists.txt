@@ -34,10 +34,6 @@ CPM_AddModule("Pipeline"
     GIT_TAG "cpm"
 )
 
-CPM_AddModule("deeplocalizer_classifier"
-    GIT_REPOSITORY "https://github.com/BioroboticsLab/deeplocalizer_classifier.git"
-    GIT_TAG "cpm"
-)
 CPM_Finish()
 
 
@@ -51,9 +47,7 @@ find_package(Qt5Widgets REQUIRED)
 find_package(Qt5OpenGL REQUIRED)
 find_package(Threads REQUIRED)
 find_package(Boost COMPONENTS system filesystem serialization program_options REQUIRED)
-find_package(Caffe REQUIRED)
 find_package(Glog REQUIRED)
-find_package(LMDB REQUIRED)
 find_package(CUDA REQUIRED)
 
 find_program(CMAKE_MEMORYCHECK_COMMAND valgrind)
@@ -146,23 +140,18 @@ add_definitions(${Qt5Widgets_DEFINITIONS})
 # include deps dependecies as SYSTEM headers to prevent warnings from
 # deps files. unfortunatelly, this has no effect when using MSVC.
 include_directories(
-    SYSTEM ${PIPELINE_INCLUDE_DIR}
     SYSTEM ${CATCH_INCLUDE_DIR}
     SYSTEM ${Qt5Widgets_INCLUDE_DIRS}
     SYSTEM ${OpenCV_INCLUDE_DIRS}
     SYSTEM ${Qt5OpenGL_INCLUDE_DIRS}
     SYSTEM ${Caffe_INCLUDE_DIRS}
-    SYSTEM ${LMDB_INCLUDE_DIRS}
     SYSTEM ${CUDA_INCLUDE_DIRS}
-    SYSTEM ${DEEP_CLASSIFIER_INCLUDE_DIR}
 )
 
 set(libs
     ${OpenCV_LIBS}
     ${Boost_LIBRARIES}
     ${CMAKE_THREAD_LIBS_INIT}
-    ${Caffe_LIBRARIES}
-    ${LMDB_LIBRARIES}
     ${CUDA_LIBRARIES}
     Qt5::Core
     Qt5::Widgets
