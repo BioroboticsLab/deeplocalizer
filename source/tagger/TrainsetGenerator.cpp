@@ -241,13 +241,14 @@ void TrainsetGenerator::processParallel(const std::vector<ImageDesc> &img_descs,
     _n_done.store(0);
     printProgress(_start_time, 0);
 
-    size_t n_cpus = size_t(std::thread::hardware_concurrency()*2);
-    if (n_cpus == 0) n_cpus = 1;
-    size_t per_cpu = img_descs.size() / n_cpus;
-    for(size_t i = 0; i < n_cpus && i < img_descs.size(); i++) {
-        auto begin = img_descs.cbegin() + per_cpu*i;
-        auto end = img_descs.cbegin() + per_cpu*(i+1);
-        if (i + 1 == n_cpus) {
+    size_t n_threads = std::min(size_t(std::thread::hardware_concurrency()*2),
+                             img_descs.size());
+    size_t images_per_thread = img_descs.size() / n_threads;
+    ASSERT(images_per_thread >= 1, "There are no lazy workers");
+    for(size_t i = 0; i < n_threads && i < img_descs.size(); i++) {
+        auto begin = img_descs.cbegin() + images_per_thread*i;
+        auto end = img_descs.cbegin() + images_per_thread*(i+1);
+        if (i + 1 == n_threads) {
             end = img_descs.cend();
         }
         threads.emplace_back(
