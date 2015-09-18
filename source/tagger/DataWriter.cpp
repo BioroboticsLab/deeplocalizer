@@ -49,7 +49,8 @@ void ImageWriter::writeImages(const std::vector<TrainDatum> &data, Dataset::Phas
     }
     for(const auto & d: data) {
         io::path output_file(output_dir);
-        output_file.append(d.filename());
+        io::path image_path = d.filename();
+        output_file /= image_path.filename();
         cv::imwrite(output_file.string(), d.mat());
     }
 }
