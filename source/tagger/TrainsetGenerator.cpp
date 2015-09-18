@@ -225,16 +225,14 @@ int TrainsetGenerator::wrongAroundCoordinate() {
 TrainsetGenerator TrainsetGenerator::operator=(TrainsetGenerator &&other) {
     return TrainsetGenerator(std::move(other));
 }
-void TrainsetGenerator::process(const std::vector<ImageDesc> &descs,
-                                Dataset::Phase phase) {
-    return process(descs.cbegin(), descs.cend(), phase);
+void TrainsetGenerator::process(const std::vector<ImageDesc> &descs) {
+    return process(descs.cbegin(), descs.cend());
 }
 
-void TrainsetGenerator::processParallel(const std::vector<ImageDesc> &img_descs,
-                                        const Dataset::Phase phase) {
+void TrainsetGenerator::processParallel(const std::vector<ImageDesc> &img_descs) {
     using Iter = std::vector<ImageDesc>::const_iterator;
     std::vector<std::thread> threads;
-    auto fn = std::mem_fn<void(Iter, Iter, const Dataset::Phase)>(&TrainsetGenerator::process<Iter>);
+    auto fn = std::mem_fn<void(Iter, Iter)>(&TrainsetGenerator::process<Iter>);
 
     _start_time = std::chrono::system_clock::now();
     _n_todo = img_descs.size();
@@ -252,7 +250,7 @@ void TrainsetGenerator::processParallel(const std::vector<ImageDesc> &img_descs,
             end = img_descs.cend();
         }
         threads.emplace_back(
-                std::thread(fn, this, begin, end, phase)
+                std::thread(fn, this, begin, end)
         );
     }
     for(auto &t: threads) {

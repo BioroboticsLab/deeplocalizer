@@ -27,36 +27,32 @@ time_point<system_clock> start_time;
 void setupOptions() {
     desc_option.add_options()
             ("help,h", "Print help messages")
-            ("test", po::value<std::string>(), "File with test image paths")
-            ("train", po::value<std::string>(), "File with train image paths")
             ("format,f", po::value<std::string>(), "Format either `lmdb`, `images` or `all`. Default is `lmdb`. "
                                                    "`all` will save it both with lmdb and as images.")
             ("samples-per-tag,s", po::value<unsigned int>(), "Number of rotated and translated images per tag. Must be a multiple of 4."
                     " Default is 32.")
+            ("pathfile", po::value<std::string>(), "Pathfile to the images")
             ("output-dir,o", po::value<std::string>(), "Output images to this directory");
+    positional_opt.add("pathfile", 1);
 }
 
 
 int run(QCoreApplication &,
-        std::string trainfile,
-        std::string testfile,
+        std::string pathfile,
         Dataset::Format save_format,
         std::string output_dir,
         unsigned int samples_per_tag
 ) {
     std::cout << "loading training" << std::endl;
-    const auto train_img_descs = ImageDesc::fromPathFile(trainfile, ManuallyTagger::IMAGE_DESC_EXT);
-    const auto test_img_descs = ImageDesc::fromPathFile(testfile, ManuallyTagger::IMAGE_DESC_EXT);
+    const auto img_descs = ImageDesc::fromPathFile(pathfile, ManuallyTagger::IMAGE_DESC_EXT);
     TrainsetGenerator gen{
             DataWriter::fromSaveFormat(output_dir, save_format)
     };
     gen.samples_per_tag = samples_per_tag;
     gen.wrong_samples_per_tag = samples_per_tag;
-    std::cout << "Generating train set: " << std::endl;
-    gen.processParallel(train_img_descs, Dataset::Train);
-    std::cout << std::endl << std::endl;
-    std::cout << "Generating test set: " << std::endl;
-    gen.processParallel(test_img_descs, Dataset::Test);
+    std::cout << "Generating data set: " << std::endl;
+    gen.processParallel(img_descs);
+    std::cout << "Saved dataset to: " << output_dir << std::endl;
     return 0;
 }
 
@@ -81,7 +77,7 @@ int main(int argc, char* argv[])
         printUsage();
         return 0;
     }
-    if(vm.count("test") && vm.count("train") && vm.count("output-dir") && vm.count("format")) {
+    if(vm.count("pathfile") && vm.count("output-dir") && vm.count("format")) {
         auto format_str = vm.at("format").as<std::string>();
         auto opt_format = Dataset::parseFormat(format_str);
         if(not opt_format){
@@ -93,10 +89,9 @@ int main(int argc, char* argv[])
         if(vm.count("samples-per-tag")) {
             samples_per_tag = vm.at("samples-per-tag").as<unsigned int>();
         }
-        auto trainfile = vm.at("train").as<std::string>();
-        auto testfile = vm.at("test").as<std::string>();
+        auto pathfile = vm.at("pathfile").as<std::string>();
         auto output_dir = vm.at("output-dir").as<std::string>();
-        return run(qapp, trainfile, testfile, opt_format.get(), output_dir, samples_per_tag);
+        return run(qapp, pathfile, opt_format.get(), output_dir, samples_per_tag);
     } else {
         std::cout << "No pathfile, format or output directory given." << std::endl;
         printUsage();

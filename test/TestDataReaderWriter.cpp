@@ -39,24 +39,22 @@ TEST_CASE( "TestDataReaderWriter", "" ) {
                 {
                     LMDBWriter lmdb((unique_path / "lmdb").string());
                     REQUIRE(not data.empty());
-                    lmdb.write(data, Dataset::Train);
+                    lmdb.write(data);
                 }
                 {
-                    LMDBReader lmdb((unique_path / "lmdb" / "train").string(), shape);
+                    LMDBReader lmdb((unique_path / "lmdb").string(), shape);
                     caffe::Blob<float> blob;
                     std::vector<int> labels;
                     REQUIRE(lmdb.read(blob, labels));
-
                     REQUIRE(std::equal(blob.shape().cbegin(), blob.shape().cend(), shape.cbegin()));
                 }
                 {
                     ImageWriter imageWriter((unique_path / "images").string());
                     REQUIRE(not data.empty());
-                    imageWriter.write(data, Dataset::Train);
+                    imageWriter.write(data);
                 }
                 {
-                    ImageReader imageReader((unique_path / "images" / "train"
-                                             / "train.txt").string(), shape);
+                    ImageReader imageReader((unique_path / "images" / "images.txt").string(), shape);
                     caffe::Blob<float> blob;
                     std::vector<int> labels;
                     REQUIRE(imageReader.read(blob, labels));

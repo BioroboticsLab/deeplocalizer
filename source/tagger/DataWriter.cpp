@@ -22,65 +22,41 @@ std::unique_ptr<DataWriter> DataWriter::fromSaveFormat(
 }
 
 ImageWriter::ImageWriter(const std::string &output_dir)
-    : _output_dir{output_dir},
-    _train_dir{_output_dir / "train"},
-    _test_dir{_output_dir / "test"}
+    : _output_dir{output_dir}
 {
-
     io::create_directories(_output_dir);
-    io::create_directories(_train_dir);
-    io::create_directories(_test_dir);
-
-    _test_stream.open((_test_dir / "test.txt").string());
-    _train_stream.open((_train_dir / "train.txt").string());
+    io::path txt_file = _output_dir / _output_dir.filename();
+    txt_file.replace_extension(".txt");
+    _stream.open(txt_file.string());
 }
 
-void ImageWriter::write(const std::vector<TrainDatum> &data,
-                        const Dataset::Phase phase) {
-    writeImages(data, phase);
-    writeLabelFile(data, phase);
+void ImageWriter::write(const std::vector<TrainDatum> &data) {
+    writeImages(data);
+    writeLabelFile(data);
 }
-void ImageWriter::writeImages(const std::vector<TrainDatum> &data, Dataset::Phase phase) const {
-    io::path output_dir;
-    if(phase == Dataset::Train) {
-        output_dir = _train_dir;
-    } else {
-        output_dir = _test_dir;
-    }
+void ImageWriter::writeImages(const std::vector<TrainDatum> &data) const {
     for(const auto & d: data) {
-        io::path output_file(output_dir);
+        io::path output_file(_output_dir);
         io::path image_path = d.filename();
         output_file /= image_path.filename();
         cv::imwrite(output_file.string(), d.mat());
     }
 }
 
-void ImageWriter::writeLabelFile(const std::vector<TrainDatum> &data, Dataset::Phase phase) {
-    std::mutex & mutex = getMutex(phase);
-    std::ofstream & stream = getStream(phase);
-    io::path & output_dir = getOutputDir(phase);
-    std::lock_guard<std::mutex> lock(mutex);
+void ImageWriter::writeLabelFile(const std::vector<TrainDatum> &data) {
+    std::lock_guard<std::mutex> lock(_mutex);
     for(const auto & datum : data) {
         const auto pair = toFilenameLabel(datum);
-        io::path image_path = output_dir / pair.first;
-        stream << image_path.string() << " " << pair.second << "\n";
+        io::path image_path = _output_dir / pair.first;
+        _stream << image_path.string() << " " << pair.second << "\n";
     }
 }
 
 LMDBWriter::LMDBWriter(const std::string &output_dir) :
-    _output_dir(output_dir),
-    _train_dir{_output_dir},
-    _test_dir{_output_dir}
+    _output_dir(output_dir)
 {
-    _train_dir.append("train");
-    _test_dir.append("test");
-
     io::create_directories(_output_dir);
-    io::create_directories(_train_dir);
-    io::create_directories(_test_dir);
-
-    openDatabase(_train_dir, &_train_mdb_env);
-    openDatabase(_test_dir, &_test_mdb_env);
+    openDatabase(_output_dir, &_mdb_env);
 }
 
 void LMDBWriter::openDatabase(const boost::filesystem::path &lmdb_dir,
@@ -106,11 +82,10 @@ unsigned long swap(unsigned long i) {
     return b0 | b1 | b2 | b3 | b4 | b5 | b6 | b7;
 }
 
-void LMDBWriter::write(const std::vector<TrainDatum> &data,
-                       const Dataset::Phase phase) {
+void LMDBWriter::write(const std::vector<TrainDatum> &data) {
     const size_t n = 1024;
-    auto mdb_env = getMDB_env(phase);
-    auto & mutex = getMutex(phase);
+    auto & mdb_env =  _mdb_env;
+    auto & mutex = _mutex;
     std::lock_guard<std::mutex> lock(mutex);
     auto indecies = shuffledIndecies(data.size());
     MDB_txn * mdb_txn = nullptr;
@@ -150,8 +125,7 @@ void LMDBWriter::write(const std::vector<TrainDatum> &data,
 }
 
 LMDBWriter::~LMDBWriter() {
-    mdb_env_close(_train_mdb_env);
-    mdb_env_close(_test_mdb_env);
+    mdb_env_close(_mdb_env);
 }
 AllFormatWriter::AllFormatWriter(const std::string &output_dir) :
     _lmdb_writer(std::make_unique<LMDBWriter>(output_dir)),
@@ -159,9 +133,8 @@ AllFormatWriter::AllFormatWriter(const std::string &output_dir) :
 {
 }
 
-void AllFormatWriter::write(const std::vector<TrainDatum> &dataset,
-                            const Dataset::Phase phase) {
-    _lmdb_writer->write(dataset, phase);
-    _image_writer->write(dataset, phase);
+void AllFormatWriter::write(const std::vector<TrainDatum> &dataset) {
+    _lmdb_writer->write(dataset);
+    _image_writer->write(dataset);
 }
 }

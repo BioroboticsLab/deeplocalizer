@@ -13,7 +13,6 @@
 
 namespace deeplocalizer {
 
-using ImagePhasePair = std::pair<std::reference_wrapper<const ImageDesc>, Dataset::Phase>;
 class TrainsetGenerator : public QObject  {
 Q_OBJECT
 public:
@@ -45,26 +44,21 @@ public:
     void trueSamples(const ImageDesc & desc, const Tag &tag, const cv::Mat & subimage,
                      std::vector<TrainDatum> & train_data);
     cv::Mat rotate(const cv::Mat & src, double degrees);
-    void process(const std::vector<ImageDesc> &descs,
-                                    Dataset::Phase phase);
-
-    std::vector<ImagePhasePair>
-    splitTestTrain(const std::vector<ImageDesc> &descs);
+    void process(const std::vector<ImageDesc> &descs);
 
     template<typename InputIt>
-    void process(InputIt begin, InputIt end, const Dataset::Phase phase) {
+    void process(InputIt begin, InputIt end) {
         std::vector<TrainDatum> data;
         for(InputIt iter = begin; iter != end; iter++) {
             const ImageDesc & desc = *iter;
             process(desc, data);
-            _writer->write(data, phase);
+            _writer->write(data);
             incrementDone();
             data.clear();
         }
     }
 
-    void processParallel(const std::vector<ImageDesc> &desc,
-                         const Dataset::Phase phase);
+    void processParallel(const std::vector<ImageDesc> &desc);
     void process(const ImageDesc & desc,
                  std::vector<TrainDatum> & train_data);
 signals:

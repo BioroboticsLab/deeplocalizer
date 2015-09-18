@@ -14,8 +14,7 @@ namespace deeplocalizer {
 
 class DataWriter {
 public:
-    virtual void write(const std::vector<TrainDatum> &dataset,
-                       const Dataset::Phase phase) = 0;
+    virtual void write(const std::vector<TrainDatum> &dataset) = 0;
     virtual ~DataWriter() = default;
     static std::unique_ptr<DataWriter> fromSaveFormat(
             const std::string &output_dir,
@@ -29,69 +28,37 @@ protected:
 class ImageWriter : public DataWriter {
 public:
     ImageWriter(const std::string & output_dir);
-    virtual void write(const std::vector<TrainDatum> &dataset,
-                       const Dataset::Phase phase);
+    virtual void write(const std::vector<TrainDatum> &dataset);
     virtual ~ImageWriter() = default;
 private:
     boost::filesystem::path _output_dir;
-    boost::filesystem::path _train_dir;
-    boost::filesystem::path _test_dir;
 
+    std::ofstream _stream;
+    std::mutex _mutex;
 
-    std::ofstream _test_stream;
-    std::mutex _test_stream_mutex;
-
-    std::ofstream _train_stream;
-    std::mutex _train_stream_mutex;
-
-    void writeImages(const std::vector<TrainDatum> &data, Dataset::Phase phase) const;
-    void writeLabelFile(const std::vector<TrainDatum> &data, Dataset::Phase phase);
-
-    inline std::mutex &getMutex(Dataset::Phase phase) {
-        return phase == Dataset::Train ? _train_stream_mutex : _test_stream_mutex;
-    }
-    inline std::ofstream &getStream(Dataset::Phase phase) {
-        return phase == Dataset::Train ? _train_stream : _test_stream;
-    }
-    inline boost::filesystem::path & getOutputDir(Dataset::Phase phase) {
-        return phase == Dataset::Train ? _train_dir : _test_dir;
-    }
+    void writeImages(const std::vector<TrainDatum> &data) const;
+    void writeLabelFile(const std::vector<TrainDatum> &data);
 };
 
 
 class LMDBWriter : public DataWriter {
 public:
     LMDBWriter(const std::string &output_dir);
-    virtual void write(const std::vector<TrainDatum> &dataset,
-                       const Dataset::Phase phase);
+    virtual void write(const std::vector<TrainDatum> &dataset);
     virtual ~LMDBWriter();
 
 private:
     boost::filesystem::path _output_dir;
-    boost::filesystem::path _train_dir;
-    boost::filesystem::path _test_dir;
-
-    MDB_env *_train_mdb_env;
-    MDB_env *_test_mdb_env;
-    std::mutex _train_mutex;
-    std::mutex _test_mutex;
+    MDB_env *_mdb_env;
+    std::mutex _mutex;
     unsigned long _id = 0;
-
     void openDatabase(const boost::filesystem::path &lmdb_dir,
                       MDB_env **mdb_env);
-
-    inline std::mutex &getMutex(Dataset::Phase phase) {
-        return phase == Dataset::Train ? _train_mutex : _test_mutex;
-    }
-    inline MDB_env* &getMDB_env(Dataset::Phase phase) {
-        return phase == Dataset::Train ? _train_mdb_env : _test_mdb_env;
-    }
 };
 class AllFormatWriter : public DataWriter {
 public:
     AllFormatWriter(const std::string &output_dir);
-    virtual void write(const std::vector<TrainDatum> &dataset,
-                       const Dataset::Phase phase);
+    virtual void write(const std::vector<TrainDatum> &dataset);
 
 private:
     std::unique_ptr<LMDBWriter> _lmdb_writer;
@@ -99,7 +66,7 @@ private:
 };
 
 class DevNullWriter : public DataWriter {
-    virtual void write(const std::vector<TrainDatum> &, const Dataset::Phase) {}
+    virtual void write(const std::vector<TrainDatum> &) {}
 };
 
 }
