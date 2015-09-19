@@ -27,7 +27,7 @@ time_point<system_clock> start_time;
 void setupOptions() {
     desc_option.add_options()
             ("help,h", "Print help messages")
-            ("format,f", po::value<std::string>(), "Format either `lmdb`, `images` or `all`. Default is `lmdb`. "
+            ("format,f", po::value<std::string>(), "Format either `lmdb`, `images`, `hdf5` or `all`. Default is `lmdb`. "
                                                    "`all` will save it both with lmdb and as images.")
             ("samples-per-tag,s", po::value<unsigned int>(), "Number of rotated and translated images per tag. Must be a multiple of 4."
                     " Default is 32.")
@@ -82,7 +82,7 @@ int main(int argc, char* argv[])
         auto opt_format = Dataset::parseFormat(format_str);
         if(not opt_format){
             std::cout << "No a valid Save format: " << format_str << std::endl;
-            std::cout << "Save format must be either `lmdb`, `images` or `all`" << std::endl;
+            std::cout << "Save format must be either `lmdb`, `images`, `hdf5` or `all`" << std::endl;
             return 1;
         }
         unsigned int samples_per_tag = 32;

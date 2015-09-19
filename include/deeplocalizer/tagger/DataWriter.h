@@ -6,6 +6,8 @@
 #include <boost/filesystem.hpp>
 #include <mutex>
 #include <lmdb.h>
+#include <hdf5.h>
+#include <hdf5_hl.h>
 
 #include "TrainDatum.h"
 #include "Dataset.h"
@@ -55,6 +57,30 @@ private:
     void openDatabase(const boost::filesystem::path &lmdb_dir,
                       MDB_env **mdb_env);
 };
+
+class HDF5Writer : public DataWriter {
+public:
+    HDF5Writer(const std::string &output_dir);
+    virtual void write(const std::vector<TrainDatum> &dataset);
+    virtual ~HDF5Writer();
+
+private:
+    void saveLabelHDF5Dataset(const hid_t file_id);
+    void saveDataHDF5Dataset(const hid_t file_id);
+    void writeBufferToFile();
+    std::string nextFilename();
+    const size_t MAX_HDF5_FILE = 1 << 28;  // ~ 256MB
+    std::ofstream _txt_file;
+
+    boost::filesystem::path _output_dir;
+    std::string _unique_path_format;
+    std::vector<TrainDatum> _buffer;
+    size_t _max_buffer_size = 0;
+    std::mutex _mutex;
+    unsigned long _file_id = 0;
+    size_t _mat_size = 0;
+};
+
 class AllFormatWriter : public DataWriter {
 public:
     AllFormatWriter(const std::string &output_dir);

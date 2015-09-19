@@ -49,6 +49,7 @@ find_package(Threads REQUIRED)
 find_package(Boost COMPONENTS system filesystem serialization program_options REQUIRED)
 find_package(Glog REQUIRED)
 find_package(CUDA REQUIRED)
+find_package(HDF5 COMPONENTS CXX REQUIRED)
 
 find_program(CMAKE_MEMORYCHECK_COMMAND valgrind)
 set(CMAKE_MEMORYCHECK_COMMAND_OPTIONS "--trace-children=yes --leak-check=full")

@@ -21,6 +21,7 @@ namespace Dataset {
         Images,
         LMDB,
         All,
+        HDF5,
         DevNull
     };
     const double TEST_PARTITION = 0.15;
