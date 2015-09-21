@@ -47,7 +47,7 @@ const std::string TrainDatum::filename() const {
     ss << "_bx" << bb.x << "_by" << bb.y <<
             "_tx" << _translation.x << "_ty" << _translation.y <<
             "_a" << angle << right_or_wrong;
-    return path.string() + ss.str() + extension.string();
+    return path.filename().string() + ss.str() + extension.string();
 }
 
 void TrainDatum::draw(QPainter &painter) const {

@@ -43,8 +43,9 @@ TEST_CASE( "TrainsetGenerator", "" ) {
                 }));
                 gen.wrongSamples(cam2_desc, data);
                 CHECK(not data.empty());
-                size_t n_wrong_samples = data.size() - n_true_samples;
-                CHECK(n_wrong_samples == n_yes * gen.samples_per_tag);
+                double n_wrong_samples = data.size() - n_true_samples;
+                double expected_wrong_samples = n_yes * gen.samples_per_tag / TrainsetGenerator::RATIO_TRUE_TO_FALSE_SAMPLES;
+                CHECK(n_wrong_samples / expected_wrong_samples  == Approx(1.).epsilon(0.01));
             }
         }
         Image cam2_img(cam2_desc);

@@ -16,6 +16,13 @@ namespace deeplocalizer {
 class TrainsetGenerator : public QObject  {
 Q_OBJECT
 public:
+    static const int MIN_TRANSLATION;
+    static const int MAX_TRANSLATION;
+    static const int MIN_AROUND_WRONG;
+    static const int MAX_AROUND_WRONG;
+    static const double RATIO_AROUND_TO_UNIFORM;
+    static const double RATIO_TRUE_TO_FALSE_SAMPLES;
+
     TrainsetGenerator();
     TrainsetGenerator(TrainsetGenerator && gen);
 
@@ -28,17 +35,21 @@ public:
     // number of wrong samples per actual tag
     unsigned int wrong_samples_per_tag = 32;
     // if positive allow wrong sample to reach into the bounding box of the tag
-    const int shrinking = 30;
+    const double max_intersection = 0.5;
 
     unsigned long current_idx;
     boost::filesystem::path output_dir;
 
     cv::Mat randomAffineTransformation(const cv::Point2f & center);
     TrainDatum trainData(const ImageDesc & desc, const Tag & tag, const cv::Mat & subimage);
-    void wrongSamplesAround(const Tag &tag,
-                                               const ImageDesc &desc,
-                                               const Image &img,
-                                               std::vector<TrainDatum> &train_data);
+    void wrongSamplesAroundTag(const Tag &tag,
+                            const ImageDesc &desc,
+                            const Image &img,
+                            std::vector<TrainDatum> &train_data);
+
+    void wrongSamplesUniform(
+                const ImageDesc &desc,  const Image &img,
+                std::vector<TrainDatum> &train_data);
     void wrongSamples(const ImageDesc & desc, std::vector<TrainDatum> & train_data);
     void trueSamples(const ImageDesc & desc, std::vector<TrainDatum> & train_data);
     void trueSamples(const ImageDesc & desc, const Tag &tag, const cv::Mat & subimage,
@@ -61,24 +72,25 @@ public:
     void processParallel(const std::vector<ImageDesc> &desc);
     void process(const ImageDesc & desc,
                  std::vector<TrainDatum> & train_data);
+    void wrongSamplesAroundTag(const ImageDesc &desc, const Image &img, std::vector<TrainDatum> &train_data);
+    void wrongSamplesAround(const ImageDesc &desc, const Image &img, std::vector<TrainDatum> &train_data);
 signals:
     void progress(double p);
 
 private:
-    static const int MIN_TRANSLATION;
-    static const int MAX_TRANSLATION;
-    static const int MIN_AROUND_WRONG;
-    static const int MAX_AROUND_WRONG;
     std::random_device _rd;
-    std::mt19937  _gen;
+    std::mt19937  _random_gen;
     std::uniform_real_distribution<double> _angle_dis;
     std::uniform_int_distribution<int> _translation_dis;
     std::uniform_int_distribution<int> _around_wrong_dis;
+    double _avg_samples_per_tag;
+    double _samples_around_err;
     std::unique_ptr<DataWriter> _writer;
     std::vector<cv::Rect> getNearbyTagBoxes(const Tag &tag,
                                             const ImageDesc &desc);
-    cv::Rect proposeWrongBox(const Tag &tag);
-    bool intersectsNone(std::vector<cv::Rect> &tag_boxes, cv::Rect wrong_box);
+    cv::Rect proposeWrongBoxAround(const Tag &tag);
+    cv::Rect proposeWrongBoxUniform(const cv::Mat & mat);
+    bool intersectsNone(const std::vector<cv::Rect> &tag_boxes, const cv::Rect & wrong_box) const ;
     void wrongSampleRot90(const Image &img,
                           const cv::Rect &wrong_box,
                           std::vector<TrainDatum> &train_data);
