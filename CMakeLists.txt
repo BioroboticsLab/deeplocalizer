@@ -29,10 +29,16 @@ CPM_AddModule("cpm_catch"
 
 set(USE_DEEPLOCALIZER "1")
 
-CPM_AddModule("Pipeline"
-    GIT_REPOSITORY "https://github.com/BioroboticsLab/pipeline.git"
-    GIT_TAG "cpm"
-)
+if(NOT DEFINED PIPELINE_PATH)
+    CPM_AddModule("pipeline"
+        GIT_REPOSITORY "https://github.com/BioroboticsLab/pipeline.git"
+        GIT_TAG "cpm"
+    )
+else()
+    CPM_AddModule("pipeline"
+        SOURCE_DIR "${PIPELINE_PATH}"
+    )
+endif()
 
 CPM_Finish()
 
