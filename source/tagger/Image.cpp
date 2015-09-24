@@ -143,11 +143,12 @@ Image::Image(const ImageDesc & descr) : _filename(descr.filename)  {
 
 cv::Mat applyClahe(cv::Mat & mat)
 {
+    static size_t kernel_size = 32;
     cv::Mat out_mat;
     cv::Ptr<cv::CLAHE> clahe = cv::createCLAHE();
     clahe->setClipLimit(4.);
-    clahe->setTilesGridSize(cv::Size(16, 16));
-    clahe->apply(mat,  out_mat);
+    clahe->setTilesGridSize(cv::Size(kernel_size, kernel_size));
+    clahe->apply(mat, out_mat);
     return out_mat;
 }
 
