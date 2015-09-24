@@ -79,6 +79,8 @@ private:
     std::mutex _mutex;
     unsigned long _file_id = 0;
     size_t _mat_size = 0;
+    size_t _mat_rows = 0;
+    size_t _mat_cols = 0;
 };
 
 class AllFormatWriter : public DataWriter {

@@ -151,8 +151,8 @@ cv::Mat applyClahe(cv::Mat & mat)
     return out_mat;
 }
 
-void Image::beesBookPreprocess() {
-    _mat = applyClahe(_mat);
+void Image::beesBookPreprocess(bool use_hist_eq) {
+    applyLocalHistogramEq();
     auto mat_with_border = cv::Mat(_mat.rows + TAG_HEIGHT,
                                    _mat.cols + TAG_WIDTH, CV_8U);
     cv::copyMakeBorder(_mat, mat_with_border,
@@ -194,30 +194,12 @@ bool Image::operator==(const Image &other) const {
 
 void Image::applyLocalHistogramEq()
 {
-    /* TODO: this could probably just use the grayscale image as L channel
-     * without the conversion to and from BGR */
     static const int clip_limit = 4;
     static const cv::Size tile_size(deeplocalizer::TAG_WIDTH, deeplocalizer::TAG_HEIGHT);
 
     auto clahe = cv::createCLAHE(clip_limit, tile_size);
-
-    cv::Mat bgr_image;
-    cv::cvtColor(_mat, bgr_image, CV_GRAY2BGR);
-    cv::Mat lab_image;
-    cv::cvtColor(bgr_image, lab_image, CV_BGR2Lab);
-
-    std::vector<cv::Mat> lab_planes(3);
-    cv::split(lab_image, lab_planes);
-
-    cv::Mat dst;
-    clahe->apply(lab_planes[0], dst);
-
-    dst.copyTo(lab_planes[0]);
-    cv::merge(lab_planes, lab_image);
-
     cv::Mat image_clahe;
-    cv::cvtColor(lab_image, image_clahe, CV_Lab2BGR);
-
-    cv::cvtColor(image_clahe, _mat, CV_BGR2GRAY);
+    clahe->apply(_mat, image_clahe);
+    _mat = image_clahe;
 }
 }

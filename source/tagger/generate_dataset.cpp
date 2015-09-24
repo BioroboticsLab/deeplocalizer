@@ -31,13 +31,13 @@ void setupOptions() {
                                                    "`all` will save it both with lmdb and as images.")
             ("samples-per-tag,s", po::value<unsigned int>(), "Number of rotated and translated images per tag. Must be a multiple of 4."
                     " Default is 32.")
+            ("scale,c", po::value<double>(), "Scale applied to the tag images. Default is 1.")
             ("pathfile", po::value<std::string>(), "Pathfile to the images")
             ("output-dir,o", po::value<std::string>(), "Output images to this directory")
             ("ratio-around-to-uniform", po::value<double>()->default_value(TrainsetGenerator::RATIO_AROUND_TO_UNIFORM_DEFAULT),
                     "Ratio of around-tag to uniform samples")
             ("ratio-true-to-false", po::value<double>()->default_value(TrainsetGenerator::RATIO_TRUE_TO_FALSE_SAMPLES_DEFAULT),
-                    "Ratio of true to false samples")
-            ("apply-local-hist-eq", po::value<bool>()->default_value(false), "Apply local histogram equalization (CLAHE) to samples");
+                    "Ratio of true to false samples");
     positional_opt.add("pathfile", 1);
 }
 
@@ -49,18 +49,18 @@ int run(QCoreApplication &,
         unsigned int samples_per_tag,
         double ratio_around_uniform,
         double ratio_true_false,
-        bool local_hist_eq
+        double scale
 ) {
     std::cout << "loading training" << std::endl;
     const auto img_descs = ImageDesc::fromPathFile(pathfile, ManuallyTagger::IMAGE_DESC_EXT);
     TrainsetGenerator gen{
             ratio_around_uniform,
             ratio_true_false,
-            local_hist_eq,
             DataWriter::fromSaveFormat(output_dir, save_format)
     };
     gen.samples_per_tag = samples_per_tag;
     gen.wrong_samples_per_tag = samples_per_tag;
+    gen.scale = scale;
     std::cout << "Generating data set: " << std::endl;
     gen.processParallel(img_descs);
     std::cout << "Saved dataset to: " << output_dir << std::endl;
@@ -104,9 +104,12 @@ int main(int argc, char* argv[])
         auto output_dir = vm.at("output-dir").as<std::string>();
         auto ratio_around_uniform = vm.at("ratio-around-to-uniform").as<double>();
         auto ratio_true_false = vm.at("ratio-true-to-false").as<double>();
-        auto local_hist_eq = vm.at("apply-local-hist-eq").as<bool>();
+        double scale = 1;
+        if (vm.count("scale"))  {
+            scale = vm.at("scale").as<double>();
+        }
         return run(qapp, pathfile, opt_format.get(), output_dir, samples_per_tag,
-                   ratio_around_uniform, ratio_true_false, local_hist_eq);
+                   ratio_around_uniform, ratio_true_false, scale);
     } else {
         std::cout << "No pathfile, format or output directory given." << std::endl;
         printUsage();

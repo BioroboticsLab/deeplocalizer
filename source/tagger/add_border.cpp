@@ -21,7 +21,8 @@ void setupOptions() {
             ("output-dir,o", po::value<std::string>(), "Write images to this directory")
             ("output-pathfile", po::value<std::string>(),
              "Write output_pathfile to this directory. Default is <output_dir>/images.txt")
-            ("pathfile", po::value<std::vector<std::string>>(), "File with paths");
+            ("pathfile", po::value<std::vector<std::string>>(), "File with paths")
+            ("use-hist-eq", po::value<bool>()->default_value(false), "Apply local histogram equalization (CLAHE) to samples");
 
     positional_opt.add("pathfile", 1);
 }
@@ -47,7 +48,8 @@ void writeOutputPathfile(io::path pathfile, const std::vector<std::string> && ou
 }
 
 int run(const std::vector<ImageDesc> image_descs, io::path & output_dir,
-        optional<io::path> output_pathfile) {
+        optional<io::path> output_pathfile,
+        bool use_hist_eq) {
     io::create_directories(output_dir);
     start_time = system_clock::now();
     printProgress(start_time, 0);
@@ -55,7 +57,7 @@ int run(const std::vector<ImageDesc> image_descs, io::path & output_dir,
     for (unsigned int i = 0; i < image_descs.size(); i++) {
         const ImageDesc & desc = image_descs.at(i);
         Image img(desc);
-        img.beesBookPreprocess();
+        img.beesBookPreprocess(use_hist_eq);
         auto input_path =  io::path(desc.filename);
         auto output = addWb(output_dir / input_path.filename());
         if(not img.write(output)) {
@@ -94,7 +96,8 @@ int main(int argc, char* argv[])
             output_pathfile = boost::make_optional(
                     io::path(vm.at("output-pathfile").as<std::string>()));
         }
-        run(image_descs, output_dir, output_pathfile);
+        bool use_hist_eq = vm.at("use-hist-eq").as<bool>();
+        run(image_descs, output_dir, output_pathfile, use_hist_eq);
     } else {
         std::cout << "No pathfile or output_dir are given" << std::endl;
         std::cout << "Usage: add_border [options] pathfile.txt "<< std::endl;

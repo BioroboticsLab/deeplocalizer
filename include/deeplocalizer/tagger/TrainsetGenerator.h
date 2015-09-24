@@ -24,20 +24,22 @@ public:
     static const double RATIO_TRUE_TO_FALSE_SAMPLES_DEFAULT;
 
     TrainsetGenerator();
-    TrainsetGenerator(double ratio_around_uniform, double ratio_true_false, bool local_hist_eq);
+    TrainsetGenerator(double ratio_around_uniform, double ratio_true_false);
     TrainsetGenerator(TrainsetGenerator && gen);
 
-    TrainsetGenerator(double ratio_around_uniform, double ratio_true_false, bool local_hist_eq,
+    TrainsetGenerator(double ratio_around_uniform, double ratio_true_false,
                       std::unique_ptr<DataWriter> writer);
     TrainsetGenerator operator=(TrainsetGenerator && other);
     ~TrainsetGenerator() = default;
 
     // number of rotated, translated samples per actual tag
-    unsigned int samples_per_tag = 32;
+    size_t samples_per_tag = 32;
     // number of wrong samples per actual tag
-    unsigned int wrong_samples_per_tag = 32;
+    size_t wrong_samples_per_tag = 32;
     // if positive allow wrong sample to reach into the bounding box of the tag
     const double max_intersection = 0.5;
+
+    double scale = 1;
 
     unsigned long current_idx;
     boost::filesystem::path output_dir;
@@ -59,12 +61,15 @@ public:
     cv::Mat rotate(const cv::Mat & src, double degrees);
     void process(const std::vector<ImageDesc> &descs);
 
+    void postProcess(std::vector<TrainDatum> & data) const;
+
     template<typename InputIt>
     void process(InputIt begin, InputIt end) {
         std::vector<TrainDatum> data;
         for(InputIt iter = begin; iter != end; iter++) {
             const ImageDesc & desc = *iter;
             process(desc, data);
+            postProcess(data);
             _writer->write(data);
             incrementDone();
             data.clear();
@@ -91,7 +96,6 @@ private:
     double _ratio_around_uniform;
     // ratio of true samples to false samples
     double _ratio_true_false;
-    bool _local_hist_eq;
     std::unique_ptr<DataWriter> _writer;
     std::vector<cv::Rect> getNearbyTagBoxes(const Tag &tag,
                                             const ImageDesc &desc);

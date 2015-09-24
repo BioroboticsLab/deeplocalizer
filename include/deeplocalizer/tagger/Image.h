@@ -59,7 +59,7 @@ public:
     explicit Image();
     explicit Image(const ImageDesc & descr);
     cv::Mat getCvMat() const;
-    void beesBookPreprocess();
+    void beesBookPreprocess(bool use_hist_eq);
     bool write(boost::filesystem::path path = {}) const;
     bool operator==(const Image & other) const;
     const std::string & filename() const {

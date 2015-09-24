@@ -155,7 +155,7 @@ void HDF5Writer::saveDataHDF5Dataset(const hid_t file_id) {
     int num_axes = 4;
     const std::string dataset_name = "data";
     size_t nb_imgs = _buffer.size();
-    hsize_t dims[] = {nb_imgs, 1, TAG_HEIGHT, TAG_WIDTH};
+    hsize_t dims[] = {nb_imgs, 1, _mat_rows, _mat_cols};
     float * data = static_cast<float*>(malloc(nb_imgs*TAG_HEIGHT*TAG_WIDTH * sizeof(float)));
     float * data_ptr = data;
     for (const TrainDatum & data: _buffer) {
@@ -171,7 +171,7 @@ void HDF5Writer::saveDataHDF5Dataset(const hid_t file_id) {
 
 void HDF5Writer::saveLabelHDF5Dataset(const hid_t file_id) {
     int num_axes = 1;
-    const std::string dataset_name = "label";
+    const std::string dataset_name = "labels";
     size_t nb_imgs = _buffer.size();
     hsize_t dims[] = {nb_imgs};
     float * data = static_cast<float*>(malloc(nb_imgs * sizeof(float)));
@@ -189,11 +189,11 @@ void HDF5Writer::saveLabelHDF5Dataset(const hid_t file_id) {
 
 void HDF5Writer::writeBufferToFile()
 {
-    std::string filename = nextFilename();
-    hid_t file_id = H5Fopen(filename.c_str(), H5F_ACC_CREAT | H5F_ACC_RDWR, H5P_DEFAULT);
+    std::string hdf5file = nextFilename();
+    hid_t file_id = H5Fopen(hdf5file.c_str(), H5F_ACC_CREAT | H5F_ACC_RDWR, H5P_DEFAULT);
     saveDataHDF5Dataset(file_id);
     saveLabelHDF5Dataset(file_id);
-    _txt_file << filename << "\n";
+    _txt_file << io::path(hdf5file).filename().string() << "\n";
     _buffer.clear();
     H5Fclose(file_id);
 }
@@ -210,6 +210,9 @@ void HDF5Writer::write(const std::vector<TrainDatum> &dataset)
     std::lock_guard<std::mutex> lk(_mutex);
     if (_mat_size == 0) {
         _mat_size = dataset.at(0).mat().total();
+        _mat_rows = dataset.at(0).mat().rows;
+        _mat_cols = dataset.at(0).mat().cols;
+
         _max_buffer_size = static_cast<size_t>(floor(MAX_HDF5_FILE / (_mat_size * sizeof(float))));
         std::cout << _max_buffer_size << std::endl;
     }

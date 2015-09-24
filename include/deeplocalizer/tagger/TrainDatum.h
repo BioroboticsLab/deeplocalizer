@@ -27,6 +27,10 @@ public:
     double rotation_angle() const {
         return _rotation_angle;
     };
+    void setMat(cv::Mat mat) {
+        _mat = mat;
+    }
+
     const cv::Mat & mat() const {
         return _mat;
     };
@@ -35,7 +39,7 @@ public:
 private:
     const std::string _original_image_filename;
     const Tag _tag;
-    const cv::Mat _mat;
+    cv::Mat _mat;
     const cv::Point2i _translation;
     const double _rotation_angle;
 };
