@@ -20,13 +20,15 @@ public:
     static const int MAX_TRANSLATION;
     static const int MIN_AROUND_WRONG;
     static const int MAX_AROUND_WRONG;
-    static const double RATIO_AROUND_TO_UNIFORM;
-    static const double RATIO_TRUE_TO_FALSE_SAMPLES;
+    static const double RATIO_AROUND_TO_UNIFORM_DEFAULT;
+    static const double RATIO_TRUE_TO_FALSE_SAMPLES_DEFAULT;
 
     TrainsetGenerator();
+    TrainsetGenerator(double ratio_around_uniform, double ratio_true_false);
     TrainsetGenerator(TrainsetGenerator && gen);
 
-    TrainsetGenerator(std::unique_ptr<DataWriter> writer);
+    TrainsetGenerator(double ratio_around_uniform, double ratio_true_false,
+                      std::unique_ptr<DataWriter> writer);
     TrainsetGenerator operator=(TrainsetGenerator && other);
     ~TrainsetGenerator() = default;
 
@@ -85,6 +87,10 @@ private:
     std::uniform_int_distribution<int> _around_wrong_dis;
     double _avg_samples_per_tag;
     double _samples_around_err;
+    // ratio of around-tag samples to uniform samples
+    double _ratio_around_uniform;
+    // ratio of true samples to false samples
+    double _ratio_true_false;
     std::unique_ptr<DataWriter> _writer;
     std::vector<cv::Rect> getNearbyTagBoxes(const Tag &tag,
                                             const ImageDesc &desc);

@@ -32,7 +32,11 @@ void setupOptions() {
             ("samples-per-tag,s", po::value<unsigned int>(), "Number of rotated and translated images per tag. Must be a multiple of 4."
                     " Default is 32.")
             ("pathfile", po::value<std::string>(), "Pathfile to the images")
-            ("output-dir,o", po::value<std::string>(), "Output images to this directory");
+            ("output-dir,o", po::value<std::string>(), "Output images to this directory")
+            ("ratio-around-to-uniform", po::value<double>()->default_value(TrainsetGenerator::RATIO_AROUND_TO_UNIFORM_DEFAULT),
+                    "Ratio of around-tag to uniform samples")
+            ("ratio-true-to-false", po::value<double>()->default_value(TrainsetGenerator::RATIO_TRUE_TO_FALSE_SAMPLES_DEFAULT),
+                    "Ratio of true to false samples");
     positional_opt.add("pathfile", 1);
 }
 
@@ -41,11 +45,15 @@ int run(QCoreApplication &,
         std::string pathfile,
         Dataset::Format save_format,
         std::string output_dir,
-        unsigned int samples_per_tag
+        unsigned int samples_per_tag,
+        double ratio_around_uniform,
+        double ratio_true_false
 ) {
     std::cout << "loading training" << std::endl;
     const auto img_descs = ImageDesc::fromPathFile(pathfile, ManuallyTagger::IMAGE_DESC_EXT);
     TrainsetGenerator gen{
+            ratio_around_uniform,
+            ratio_true_false,
             DataWriter::fromSaveFormat(output_dir, save_format)
     };
     gen.samples_per_tag = samples_per_tag;
@@ -91,7 +99,10 @@ int main(int argc, char* argv[])
         }
         auto pathfile = vm.at("pathfile").as<std::string>();
         auto output_dir = vm.at("output-dir").as<std::string>();
-        return run(qapp, pathfile, opt_format.get(), output_dir, samples_per_tag);
+        auto ratio_around_uniform = vm.at("ratio-around-to-uniform").as<double>();
+        auto ratio_true_false = vm.at("ratio-true-to-false").as<double>();
+        return run(qapp, pathfile, opt_format.get(), output_dir, samples_per_tag,
+                   ratio_around_uniform, ratio_true_false);
     } else {
         std::cout << "No pathfile, format or output directory given." << std::endl;
         printUsage();

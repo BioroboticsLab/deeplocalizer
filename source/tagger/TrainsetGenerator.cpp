@@ -15,19 +15,26 @@ const int TrainsetGenerator::MAX_TRANSLATION = TAG_WIDTH / 8;
 const int TrainsetGenerator::MIN_TRANSLATION = -TrainsetGenerator::MAX_TRANSLATION;
 const int TrainsetGenerator::MIN_AROUND_WRONG = TAG_WIDTH / 2;
 const int TrainsetGenerator::MAX_AROUND_WRONG = TAG_WIDTH / 2 + 80;
-const double TrainsetGenerator::RATIO_AROUND_TO_UNIFORM = 0.2;
-const double TrainsetGenerator::RATIO_TRUE_TO_FALSE_SAMPLES = 1;
+const double TrainsetGenerator::RATIO_AROUND_TO_UNIFORM_DEFAULT = 0.2;
+const double TrainsetGenerator::RATIO_TRUE_TO_FALSE_SAMPLES_DEFAULT = 1.;
 
 TrainsetGenerator::TrainsetGenerator() :
-    TrainsetGenerator(std::make_unique<DevNullWriter>())
+    TrainsetGenerator(RATIO_AROUND_TO_UNIFORM_DEFAULT, RATIO_TRUE_TO_FALSE_SAMPLES_DEFAULT)
 {}
 
-TrainsetGenerator::TrainsetGenerator(std::unique_ptr<DataWriter> writer)
+TrainsetGenerator::TrainsetGenerator(double ratio_around_uniform, double ratio_true_false) :
+    TrainsetGenerator(ratio_around_uniform, ratio_true_false, std::make_unique<DevNullWriter>())
+{}
+
+TrainsetGenerator::TrainsetGenerator(double ratio_around_uniform, double ratio_true_false,
+                                     std::unique_ptr<DataWriter> writer)
     :
     _random_gen(_rd()),
     _angle_dis(0, 360),
     _translation_dis(MIN_TRANSLATION, MAX_TRANSLATION),
     _around_wrong_dis(MIN_AROUND_WRONG, MAX_AROUND_WRONG),
+    _ratio_around_uniform(ratio_around_uniform),
+    _ratio_true_false(ratio_true_false),
     _writer(std::move(writer)) {
 }
 
@@ -155,7 +162,7 @@ void TrainsetGenerator::wrongSamplesUniform(
     const cv::Rect img_rect = cv::Rect(cv::Point(0, 0), img.getCvMat().size());
     const size_t nb_tags = countTrueTags(desc.getTags());
     const size_t to_sample = static_cast<size_t>(
-                round(nb_tags * samples_per_tag / RATIO_TRUE_TO_FALSE_SAMPLES / (1+RATIO_AROUND_TO_UNIFORM)));
+                round(nb_tags * samples_per_tag / _ratio_true_false / (1+_ratio_around_uniform)));
     size_t samples = 0;
     while(samples < to_sample) {
         cv::Rect box(x_dis(_random_gen), y_dis(_random_gen),
@@ -177,8 +184,8 @@ void TrainsetGenerator::wrongSamplesAround(
         std::vector<TrainDatum> &train_data) {
 
     const size_t nb_tags = countTrueTags(desc.getTags());
-    const double total_to_sample = nb_tags * samples_per_tag * RATIO_AROUND_TO_UNIFORM / (1+RATIO_AROUND_TO_UNIFORM)
-            / RATIO_TRUE_TO_FALSE_SAMPLES;
+    const double total_to_sample = nb_tags * samples_per_tag * _ratio_around_uniform / (1+_ratio_around_uniform)
+            / _ratio_true_false;
     _avg_samples_per_tag = total_to_sample / nb_tags;
     _samples_around_err = 0;
     for(const auto & tag: desc.getTags()) {
