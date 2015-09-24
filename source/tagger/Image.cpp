@@ -141,19 +141,11 @@ Image::Image(const ImageDesc & descr) : _filename(descr.filename)  {
     _mat = cv::imread(_filename, cv::IMREAD_GRAYSCALE);
 }
 
-cv::Mat applyClahe(cv::Mat & mat)
-{
-    static size_t kernel_size = 32;
-    cv::Mat out_mat;
-    cv::Ptr<cv::CLAHE> clahe = cv::createCLAHE();
-    clahe->setClipLimit(4.);
-    clahe->setTilesGridSize(cv::Size(kernel_size, kernel_size));
-    clahe->apply(mat, out_mat);
-    return out_mat;
-}
 
 void Image::beesBookPreprocess(bool use_hist_eq) {
-    applyLocalHistogramEq();
+    if (use_hist_eq) {
+        applyLocalHistogramEq();
+    }
     auto mat_with_border = cv::Mat(_mat.rows + TAG_HEIGHT,
                                    _mat.cols + TAG_WIDTH, CV_8U);
     cv::copyMakeBorder(_mat, mat_with_border,
