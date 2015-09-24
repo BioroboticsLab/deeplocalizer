@@ -36,7 +36,8 @@ void setupOptions() {
             ("ratio-around-to-uniform", po::value<double>()->default_value(TrainsetGenerator::RATIO_AROUND_TO_UNIFORM_DEFAULT),
                     "Ratio of around-tag to uniform samples")
             ("ratio-true-to-false", po::value<double>()->default_value(TrainsetGenerator::RATIO_TRUE_TO_FALSE_SAMPLES_DEFAULT),
-                    "Ratio of true to false samples");
+                    "Ratio of true to false samples")
+            ("apply-local-hist-eq", po::value<bool>()->default_value(false), "Apply local histogram equalization (CLAHE) to samples");
     positional_opt.add("pathfile", 1);
 }
 
@@ -47,13 +48,15 @@ int run(QCoreApplication &,
         std::string output_dir,
         unsigned int samples_per_tag,
         double ratio_around_uniform,
-        double ratio_true_false
+        double ratio_true_false,
+        bool local_hist_eq
 ) {
     std::cout << "loading training" << std::endl;
     const auto img_descs = ImageDesc::fromPathFile(pathfile, ManuallyTagger::IMAGE_DESC_EXT);
     TrainsetGenerator gen{
             ratio_around_uniform,
             ratio_true_false,
+            local_hist_eq,
             DataWriter::fromSaveFormat(output_dir, save_format)
     };
     gen.samples_per_tag = samples_per_tag;
@@ -101,8 +104,9 @@ int main(int argc, char* argv[])
         auto output_dir = vm.at("output-dir").as<std::string>();
         auto ratio_around_uniform = vm.at("ratio-around-to-uniform").as<double>();
         auto ratio_true_false = vm.at("ratio-true-to-false").as<double>();
+        auto local_hist_eq = vm.at("apply-local-hist-eq").as<bool>();
         return run(qapp, pathfile, opt_format.get(), output_dir, samples_per_tag,
-                   ratio_around_uniform, ratio_true_false);
+                   ratio_around_uniform, ratio_true_false, local_hist_eq);
     } else {
         std::cout << "No pathfile, format or output directory given." << std::endl;
         printUsage();

@@ -19,14 +19,14 @@ const double TrainsetGenerator::RATIO_AROUND_TO_UNIFORM_DEFAULT = 0.2;
 const double TrainsetGenerator::RATIO_TRUE_TO_FALSE_SAMPLES_DEFAULT = 1.;
 
 TrainsetGenerator::TrainsetGenerator() :
-    TrainsetGenerator(RATIO_AROUND_TO_UNIFORM_DEFAULT, RATIO_TRUE_TO_FALSE_SAMPLES_DEFAULT)
+    TrainsetGenerator(RATIO_AROUND_TO_UNIFORM_DEFAULT, RATIO_TRUE_TO_FALSE_SAMPLES_DEFAULT, false)
 {}
 
-TrainsetGenerator::TrainsetGenerator(double ratio_around_uniform, double ratio_true_false) :
-    TrainsetGenerator(ratio_around_uniform, ratio_true_false, std::make_unique<DevNullWriter>())
+TrainsetGenerator::TrainsetGenerator(double ratio_around_uniform, double ratio_true_false, bool local_hist_eq) :
+    TrainsetGenerator(ratio_around_uniform, ratio_true_false, local_hist_eq, std::make_unique<DevNullWriter>())
 {}
 
-TrainsetGenerator::TrainsetGenerator(double ratio_around_uniform, double ratio_true_false,
+TrainsetGenerator::TrainsetGenerator(double ratio_around_uniform, double ratio_true_false, bool local_hist_eq,
                                      std::unique_ptr<DataWriter> writer)
     :
     _random_gen(_rd()),
@@ -35,6 +35,7 @@ TrainsetGenerator::TrainsetGenerator(double ratio_around_uniform, double ratio_t
     _around_wrong_dis(MIN_AROUND_WRONG, MAX_AROUND_WRONG),
     _ratio_around_uniform(ratio_around_uniform),
     _ratio_true_false(ratio_true_false),
+    _local_hist_eq(local_hist_eq),
     _writer(std::move(writer)) {
 }
 
@@ -98,6 +99,7 @@ void TrainsetGenerator::trueSamples(
 void TrainsetGenerator::trueSamples(const ImageDesc &desc,
                                     std::vector<TrainDatum> &train_data) {
     Image img = Image(desc);
+    if (_local_hist_eq) img.applyLocalHistogramEq();
     for(const auto & tag : desc.getTags()) {
         if(tag.isTag()) {
             static size_t border = TAG_WIDTH / 2;
@@ -196,6 +198,7 @@ void TrainsetGenerator::wrongSamplesAround(
 void TrainsetGenerator::wrongSamples(const ImageDesc &desc,
                                      std::vector<TrainDatum> &train_data) {
     Image img{desc};
+    if (_local_hist_eq) img.applyLocalHistogramEq();
     wrongSamplesAround(desc, img, train_data);
     wrongSamplesUniform(desc, img, train_data);
 }

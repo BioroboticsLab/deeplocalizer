@@ -11,6 +11,7 @@
 #include "serialization.h"
 
 #include "Image.h"
+#include "Tag.h"
 #include "utils.h"
 #include "qt_helper.h"
 
@@ -178,5 +179,34 @@ bool Image::operator==(const Image &other) const {
         return false;
     }
     return std::equal(m.begin<uchar>(), m.end<uchar>(), o.begin<uchar>(), o.end<uchar>());
+}
+
+void Image::applyLocalHistogramEq()
+{
+    /* TODO: this could probably just use the grayscale image as L channel
+     * without the conversion to and from BGR */
+    static const int clip_limit = 4;
+    static const cv::Size tile_size(deeplocalizer::TAG_WIDTH, deeplocalizer::TAG_HEIGHT);
+
+    auto clahe = cv::createCLAHE(clip_limit, tile_size);
+
+    cv::Mat bgr_image;
+    cv::cvtColor(_mat, bgr_image, CV_GRAY2BGR);
+    cv::Mat lab_image;
+    cv::cvtColor(bgr_image, lab_image, CV_BGR2Lab);
+
+    std::vector<cv::Mat> lab_planes(3);
+    cv::split(lab_image, lab_planes);
+
+    cv::Mat dst;
+    clahe->apply(lab_planes[0], dst);
+
+    dst.copyTo(lab_planes[0]);
+    cv::merge(lab_planes, lab_image);
+
+    cv::Mat image_clahe;
+    cv::cvtColor(lab_image, image_clahe, CV_Lab2BGR);
+
+    cv::cvtColor(image_clahe, _mat, CV_BGR2GRAY);
 }
 }

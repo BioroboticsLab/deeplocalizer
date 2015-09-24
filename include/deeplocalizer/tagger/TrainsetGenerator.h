@@ -24,10 +24,10 @@ public:
     static const double RATIO_TRUE_TO_FALSE_SAMPLES_DEFAULT;
 
     TrainsetGenerator();
-    TrainsetGenerator(double ratio_around_uniform, double ratio_true_false);
+    TrainsetGenerator(double ratio_around_uniform, double ratio_true_false, bool local_hist_eq);
     TrainsetGenerator(TrainsetGenerator && gen);
 
-    TrainsetGenerator(double ratio_around_uniform, double ratio_true_false,
+    TrainsetGenerator(double ratio_around_uniform, double ratio_true_false, bool local_hist_eq,
                       std::unique_ptr<DataWriter> writer);
     TrainsetGenerator operator=(TrainsetGenerator && other);
     ~TrainsetGenerator() = default;
@@ -91,6 +91,7 @@ private:
     double _ratio_around_uniform;
     // ratio of true samples to false samples
     double _ratio_true_false;
+    bool _local_hist_eq;
     std::unique_ptr<DataWriter> _writer;
     std::vector<cv::Rect> getNearbyTagBoxes(const Tag &tag,
                                             const ImageDesc &desc);

@@ -65,6 +65,7 @@ public:
     const std::string & filename() const {
         return _filename;
     }
+    void applyLocalHistogramEq();
 private:
     cv::Mat _mat;
     std::string _filename;
