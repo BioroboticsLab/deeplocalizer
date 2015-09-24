@@ -141,7 +141,18 @@ Image::Image(const ImageDesc & descr) : _filename(descr.filename)  {
     _mat = cv::imread(_filename, cv::IMREAD_GRAYSCALE);
 }
 
+cv::Mat applyClahe(cv::Mat & mat)
+{
+    cv::Mat out_mat;
+    cv::Ptr<cv::CLAHE> clahe = cv::createCLAHE();
+    clahe->setClipLimit(4.);
+    clahe->setTilesGridSize(cv::Size(16, 16));
+    clahe->apply(mat,  out_mat);
+    return out_mat;
+}
+
 void Image::beesBookPreprocess() {
+    _mat = applyClahe(_mat);
     auto mat_with_border = cv::Mat(_mat.rows + TAG_HEIGHT,
                                    _mat.cols + TAG_WIDTH, CV_8U);
     cv::copyMakeBorder(_mat, mat_with_border,
