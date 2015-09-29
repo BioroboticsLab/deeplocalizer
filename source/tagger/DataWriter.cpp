@@ -214,7 +214,6 @@ void HDF5Writer::write(const std::vector<TrainDatum> &dataset)
         _mat_cols = dataset.at(0).mat().cols;
 
         _max_buffer_size = static_cast<size_t>(floor(MAX_HDF5_FILE / (_mat_size * sizeof(float))));
-        std::cout << _max_buffer_size << std::endl;
     }
     for(const auto & data : dataset) {
         ASSERT(data.mat().total() == _mat_size,
