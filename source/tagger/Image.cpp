@@ -142,23 +142,6 @@ Image::Image(const ImageDesc & descr) : _filename(descr.filename)  {
 }
 
 
-void Image::beesBookPreprocess(bool use_hist_eq) {
-    if (use_hist_eq) {
-        applyLocalHistogramEq();
-    }
-    auto mat_with_border = cv::Mat(_mat.rows + TAG_HEIGHT,
-                                   _mat.cols + TAG_WIDTH, CV_8U);
-    cv::copyMakeBorder(_mat, mat_with_border,
-                       TAG_HEIGHT / 2, TAG_HEIGHT / 2,
-                       TAG_WIDTH  / 2, TAG_WIDTH  / 2,
-                       cv::BORDER_REPLICATE | cv::BORDER_ISOLATED);
-    _mat.release();
-    _mat = mat_with_border;
-}
-
-cv::Mat Image::getCvMat() const {
-    return _mat;
-}
 
 bool Image::write(io::path path) const {
     if (path.empty()) {
@@ -185,14 +168,4 @@ bool Image::operator==(const Image &other) const {
     return std::equal(m.begin<uchar>(), m.end<uchar>(), o.begin<uchar>(), o.end<uchar>());
 }
 
-void Image::applyLocalHistogramEq()
-{
-    static const int clip_limit = 4;
-    static const cv::Size tile_size(deeplocalizer::TAG_WIDTH, deeplocalizer::TAG_HEIGHT);
-
-    auto clahe = cv::createCLAHE(clip_limit, tile_size);
-    cv::Mat image_clahe;
-    clahe->apply(_mat, image_clahe);
-    _mat = image_clahe;
-}
 }

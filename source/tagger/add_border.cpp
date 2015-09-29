@@ -22,8 +22,8 @@ void setupOptions() {
             ("output-pathfile", po::value<std::string>(),
              "Write output_pathfile to this directory. Default is <output_dir>/images.txt")
             ("pathfile", po::value<std::vector<std::string>>(), "File with paths")
-            ("use-hist-eq", po::value<bool>()->default_value(false), "Apply local histogram equalization (CLAHE) to samples");
-
+            ("use-hist-eq", po::value<bool>()->default_value(false), "Apply local histogram equalization (CLAHE) to samples")
+            ("use-threshold", po::value<bool>()->default_value(false), "Apply adaptive thresholding to samples");
     positional_opt.add("pathfile", 1);
 }
 
@@ -47,9 +47,55 @@ void writeOutputPathfile(io::path pathfile, const std::vector<std::string> && ou
     std::cout << pathfile.string() << std::endl;
 }
 
+void adaptiveTresholding(cv::Mat & mat) {
+    static double max_value = 255;
+    static size_t block_size = 51;
+    static double weight_original = 0.7;
+    static double weight_threshold = 0.3;
+
+    cv::Mat mat_threshold(mat.rows, mat.cols, CV_8UC1);
+    cv::adaptiveThreshold(mat, mat_threshold, max_value,
+                          cv::ADAPTIVE_THRESH_GAUSSIAN_C,
+                          cv::THRESH_BINARY, block_size, 0);
+    cv::addWeighted(mat, weight_original, mat_threshold, weight_threshold, 0 /*gamma*/, mat);
+}
+
+void localHistogramEq(cv::Mat & mat) {
+    static const int clip_limit = 2;
+    static const cv::Size tile_size(deeplocalizer::TAG_WIDTH, deeplocalizer::TAG_HEIGHT);
+    auto clahe = cv::createCLAHE(clip_limit, tile_size);
+    cv::Mat image_clahe;
+    clahe->apply(mat, mat);
+}
+
+void makeBorder(cv::Mat & mat) {
+    auto mat_with_border = cv::Mat(mat.rows + TAG_HEIGHT,
+                                   mat.cols + TAG_WIDTH, CV_8U);
+    cv::copyMakeBorder(mat, mat_with_border,
+                       TAG_HEIGHT / 2, TAG_HEIGHT / 2,
+                       TAG_WIDTH  / 2, TAG_WIDTH  / 2,
+                       cv::BORDER_REPLICATE | cv::BORDER_ISOLATED);
+    mat = mat_with_border;
+}
+void processImage(Image & img, bool use_hist_eq, bool use_thresholding,
+                  bool make_border) {
+    cv::Mat & mat = img.getCvMatRef();
+
+    if (make_border) {
+        makeBorder(mat);
+    }
+    if (use_hist_eq) {
+        localHistogramEq(mat);
+    }
+    if (use_thresholding) {
+        adaptiveTresholding(mat);
+    }
+}
+
 int run(const std::vector<ImageDesc> image_descs, io::path & output_dir,
         optional<io::path> output_pathfile,
-        bool use_hist_eq) {
+        bool use_hist_eq,
+        bool use_thresholding) {
     io::create_directories(output_dir);
     start_time = system_clock::now();
     printProgress(start_time, 0);
@@ -57,7 +103,7 @@ int run(const std::vector<ImageDesc> image_descs, io::path & output_dir,
     for (unsigned int i = 0; i < image_descs.size(); i++) {
         const ImageDesc & desc = image_descs.at(i);
         Image img(desc);
-        img.beesBookPreprocess(use_hist_eq);
+        processImage(img, use_hist_eq, use_thresholding, true /*make_border*/);
         auto input_path =  io::path(desc.filename);
         auto output = addWb(output_dir / input_path.filename());
         if(not img.write(output)) {
@@ -97,7 +143,8 @@ int main(int argc, char* argv[])
                     io::path(vm.at("output-pathfile").as<std::string>()));
         }
         bool use_hist_eq = vm.at("use-hist-eq").as<bool>();
-        run(image_descs, output_dir, output_pathfile, use_hist_eq);
+        bool use_threshold = vm.at("use-threshold").as<bool>();
+        run(image_descs, output_dir, output_pathfile, use_hist_eq, use_threshold);
     } else {
         std::cout << "No pathfile or output_dir are given" << std::endl;
         std::cout << "Usage: add_border [options] pathfile.txt "<< std::endl;

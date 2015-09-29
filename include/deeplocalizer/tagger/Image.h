@@ -58,8 +58,14 @@ class Image {
 public:
     explicit Image();
     explicit Image(const ImageDesc & descr);
-    cv::Mat getCvMat() const;
-    void beesBookPreprocess(bool use_hist_eq);
+
+    inline cv::Mat getCvMat() const {
+        return _mat;
+    }
+    inline cv::Mat & getCvMatRef() {
+        return _mat;
+    }
+
     bool write(boost::filesystem::path path = {}) const;
     bool operator==(const Image & other) const;
     const std::string & filename() const {
