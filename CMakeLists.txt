@@ -12,6 +12,7 @@ find_package(Git)
 if(NOT GIT_FOUND)
     message(FATAL_ERROR "CPM requires Git.")
 endif()
+
 if (NOT EXISTS ${CPM_DIR}/CPM.cmake)
     message(STATUS "Cloning repo (https://github.com/iauns/cpm)")
     execute_process(
@@ -27,7 +28,10 @@ include(${CPM_DIR}/CPM.cmake)
 CPM_AddModule("cpm_catch"
     GIT_REPOSITORY "https://github.com/bcachet/cpm-catch")
 
-set(USE_DEEPLOCALIZER "1")
+set(USE_DEEPLOCALIZER 1)
+set(BLAS Open CACHE STRING "Use openblas")
+set(BUILD_python Off)
+set(BUILD_python_layer Off)
 
 if(NOT DEFINED PIPELINE_PATH)
     CPM_AddModule("pipeline"
