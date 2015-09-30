@@ -22,8 +22,10 @@ void setupOptions() {
             ("output-pathfile", po::value<std::string>(),
              "Write output_pathfile to this directory. Default is <output_dir>/images.txt")
             ("pathfile", po::value<std::vector<std::string>>(), "File with paths")
+            ("border", po::value<bool>()->default_value(true), "Add a border around the image.")
             ("use-hist-eq", po::value<bool>()->default_value(false), "Apply local histogram equalization (CLAHE) to samples")
-            ("use-threshold", po::value<bool>()->default_value(false), "Apply adaptive thresholding to samples");
+            ("use-threshold", po::value<bool>()->default_value(false), "Apply adaptive thresholding to samples")
+            ("binary-image", po::value<bool>()->default_value(false), "Save binary image from thresholding");
     positional_opt.add("pathfile", 1);
 }
 
@@ -47,7 +49,7 @@ void writeOutputPathfile(io::path pathfile, const std::vector<std::string> && ou
     std::cout << pathfile.string() << std::endl;
 }
 
-void adaptiveTresholding(cv::Mat & mat) {
+void adaptiveTresholding(cv::Mat & mat, bool use_binary_image) {
     static double max_value = 255;
     static size_t block_size = 51;
     static double weight_original = 0.7;
@@ -57,7 +59,11 @@ void adaptiveTresholding(cv::Mat & mat) {
     cv::adaptiveThreshold(mat, mat_threshold, max_value,
                           cv::ADAPTIVE_THRESH_GAUSSIAN_C,
                           cv::THRESH_BINARY, block_size, 0);
-    cv::addWeighted(mat, weight_original, mat_threshold, weight_threshold, 0 /*gamma*/, mat);
+    if (use_binary_image) {
+        mat = mat_threshold;
+    } else {
+        cv::addWeighted(mat, weight_original, mat_threshold, weight_threshold, 0 /*gamma*/, mat);
+    }
 }
 
 void localHistogramEq(cv::Mat & mat) {
@@ -78,6 +84,7 @@ void makeBorder(cv::Mat & mat) {
     mat = mat_with_border;
 }
 void processImage(Image & img, bool use_hist_eq, bool use_thresholding,
+                  bool use_binary_image,
                   bool make_border) {
     cv::Mat & mat = img.getCvMatRef();
 
@@ -88,14 +95,16 @@ void processImage(Image & img, bool use_hist_eq, bool use_thresholding,
         localHistogramEq(mat);
     }
     if (use_thresholding) {
-        adaptiveTresholding(mat);
+        adaptiveTresholding(mat, use_binary_image);
     }
 }
 
 int run(const std::vector<ImageDesc> image_descs, io::path & output_dir,
         optional<io::path> output_pathfile,
         bool use_hist_eq,
-        bool use_thresholding) {
+        bool use_thresholding,
+        bool use_binary_image,
+        bool border) {
     io::create_directories(output_dir);
     start_time = system_clock::now();
     printProgress(start_time, 0);
@@ -103,7 +112,7 @@ int run(const std::vector<ImageDesc> image_descs, io::path & output_dir,
     for (unsigned int i = 0; i < image_descs.size(); i++) {
         const ImageDesc & desc = image_descs.at(i);
         Image img(desc);
-        processImage(img, use_hist_eq, use_thresholding, true /*make_border*/);
+        processImage(img, use_hist_eq, use_thresholding, use_binary_image, border);
         auto input_path =  io::path(desc.filename);
         auto output = addWb(output_dir / input_path.filename());
         if(not img.write(output)) {
@@ -144,7 +153,13 @@ int main(int argc, char* argv[])
         }
         bool use_hist_eq = vm.at("use-hist-eq").as<bool>();
         bool use_threshold = vm.at("use-threshold").as<bool>();
-        run(image_descs, output_dir, output_pathfile, use_hist_eq, use_threshold);
+        bool use_binary_image = vm.at("binary-image").as<bool>();
+        if (use_binary_image) {
+            use_threshold = true;
+        }
+        bool border = vm.at("border").as<bool>();
+        run(image_descs, output_dir, output_pathfile, use_hist_eq, use_threshold,
+            use_binary_image, border);
     } else {
         std::cout << "No pathfile or output_dir are given" << std::endl;
         std::cout << "Usage: add_border [options] pathfile.txt "<< std::endl;
