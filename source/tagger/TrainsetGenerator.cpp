@@ -114,7 +114,7 @@ void TrainsetGenerator::process(const ImageDesc &desc,
     };
 
     const size_t start_size =  train_data.size();
-    while(train_data.size() - start_size < 8*_sample_rate*boxes.size()) {
+    while(train_data.size() - start_size < _sample_rate*boxes.size()) {
         cv::Mat random_points =
                 generateRandomPoints(desc.getTags().size());
         auto neighbors_dist = neighborsDist(random_points);
