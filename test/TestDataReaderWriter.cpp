@@ -33,21 +33,8 @@ TEST_CASE( "TestDataReaderWriter", "" ) {
             THEN("Writer will save the samples and Reader will load it.") {
                 TrainsetGenerator gen;
                 std::vector<TrainDatum> data;
-                gen.trueSamples(cam2_desc, data);
-                gen.wrongSamples(cam2_desc, data);
+                gen.process(cam2_desc, data);
                 auto tags = cam2_desc.getTags();
-                {
-                    LMDBWriter lmdb((unique_path / "lmdb").string());
-                    REQUIRE(not data.empty());
-                    lmdb.write(data);
-                }
-                {
-                    LMDBReader lmdb((unique_path / "lmdb").string(), shape);
-                    caffe::Blob<float> blob;
-                    std::vector<int> labels;
-                    REQUIRE(lmdb.read(blob, labels));
-                    REQUIRE(std::equal(blob.shape().cbegin(), blob.shape().cend(), shape.cbegin()));
-                }
                 {
                     ImageWriter imageWriter((unique_path / "images").string());
                     REQUIRE(not data.empty());

@@ -1,12 +1,8 @@
-
-#ifndef DEEP_LOCALIZER_DATASET_H
-#define DEEP_LOCALIZER_DATASET_H
-
+#pragma once
 
 #include <memory>
 #include <boost/filesystem.hpp>
 #include <mutex>
-#include <lmdb.h>
 
 #include "TrainDatum.h"
 
@@ -19,8 +15,6 @@ namespace Dataset {
     };
     enum Format {
         Images,
-        LMDB,
-        All,
         HDF5,
         DevNull
     };
@@ -30,4 +24,3 @@ namespace Dataset {
 }
 
 }
-#endif //DEEP_LOCALIZER_DATASET_H

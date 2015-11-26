@@ -21,11 +21,8 @@ public:
     static std::unique_ptr<DataWriter> fromSaveFormat(
             const std::string &output_dir,
             Dataset::Format format);
-protected:
-    inline std::pair<std::string, int> toFilenameLabel(const TrainDatum & datum) {
-        return std::make_pair(datum.filename(), datum.tag().isTag());
-    }
 };
+
 
 class ImageWriter : public DataWriter {
 public:
@@ -40,23 +37,14 @@ private:
 
     void writeImages(const std::vector<TrainDatum> &data) const;
     void writeLabelFile(const std::vector<TrainDatum> &data);
+    inline std::string filename(const TrainDatum & datum) const {
+        return datum.description() + ".jpeg";
+    }
+    inline std::pair<std::string, double> toFilenameLabel(const TrainDatum & datum) {
+        return std::make_pair(filename(datum), datum.taginess());
+    }
 };
 
-
-class LMDBWriter : public DataWriter {
-public:
-    LMDBWriter(const std::string &output_dir);
-    virtual void write(const std::vector<TrainDatum> &dataset);
-    virtual ~LMDBWriter();
-
-private:
-    boost::filesystem::path _output_dir;
-    MDB_env *_mdb_env;
-    std::mutex _mutex;
-    unsigned long _id = 0;
-    void openDatabase(const boost::filesystem::path &lmdb_dir,
-                      MDB_env **mdb_env);
-};
 
 class HDF5Writer : public DataWriter {
 public:
@@ -83,15 +71,6 @@ private:
     size_t _mat_cols = 0;
 };
 
-class AllFormatWriter : public DataWriter {
-public:
-    AllFormatWriter(const std::string &output_dir);
-    virtual void write(const std::vector<TrainDatum> &dataset);
-
-private:
-    std::unique_ptr<LMDBWriter> _lmdb_writer;
-    std::unique_ptr<ImageWriter> _image_writer;
-};
 
 class DevNullWriter : public DataWriter {
     virtual void write(const std::vector<TrainDatum> &) {}
