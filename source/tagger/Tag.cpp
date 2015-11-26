@@ -126,17 +126,7 @@ bool Tag::operator==(const Tag &other) const {
 
 
 cv::Mat Tag::getSubimage(const cv::Mat & orginal, unsigned int border) const {
-    cv::Rect box = _boundingBox;
-    box.x -= border;
-    box.y -= border;
-    box.width += 2*border;
-    box.height+= 2*border;
-    if(box.x < 0) box.x = 0;
-    if(box.y < 0) box.y = 0;
-    if(box.width + box.x >= orginal.cols) box.x = orginal.cols - box.width - 1;
-    if(box.height + box.y >= orginal.rows) box.y = orginal.rows - box.height - 1;
-
-    return orginal(box).clone();
+    return ::deeplocalizer::getSubimage(orginal, _boundingBox, border);
 }
 
 void Tag::draw(QPainter & p, int lineWidth) const {

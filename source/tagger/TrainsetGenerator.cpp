@@ -11,12 +11,6 @@
 
 namespace deeplocalizer {
 
-const int TrainsetGenerator::MAX_TRANSLATION = TAG_WIDTH / 8;
-const int TrainsetGenerator::MIN_TRANSLATION = -TrainsetGenerator::MAX_TRANSLATION;
-const int TrainsetGenerator::MIN_AROUND_WRONG = TAG_WIDTH / 2;
-const int TrainsetGenerator::MAX_AROUND_WRONG = TAG_WIDTH / 2 + 80;
-const double TrainsetGenerator::RATIO_AROUND_TO_UNIFORM_DEFAULT = 0.2;
-const double TrainsetGenerator::RATIO_TRUE_TO_FALSE_SAMPLES_DEFAULT = 1.;
 
 TrainsetGenerator::TrainsetGenerator() :
     TrainsetGenerator(RATIO_AROUND_TO_UNIFORM_DEFAULT, RATIO_TRUE_TO_FALSE_SAMPLES_DEFAULT, false)

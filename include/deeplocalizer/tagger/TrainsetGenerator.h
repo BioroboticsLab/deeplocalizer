@@ -10,19 +10,15 @@
 #include "Dataset.h"
 #include "DataWriter.h"
 #include "utils.h"
+#include "deeplocalizer_tagger.h"
 
 namespace deeplocalizer {
 
 class TrainsetGenerator : public QObject  {
 Q_OBJECT
 public:
-    static const int MIN_TRANSLATION;
     static const int MAX_TRANSLATION;
-    static const int MIN_AROUND_WRONG;
     static const int MAX_AROUND_WRONG;
-    static const double RATIO_AROUND_TO_UNIFORM_DEFAULT;
-    static const double RATIO_TRUE_TO_FALSE_SAMPLES_DEFAULT;
-
     TrainsetGenerator();
     TrainsetGenerator(double ratio_around_uniform, double ratio_true_false);
     TrainsetGenerator(TrainsetGenerator && gen);

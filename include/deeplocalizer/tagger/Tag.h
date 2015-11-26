@@ -14,14 +14,12 @@
 #include "pipeline/datastructure/serialization.hpp"
 #include "serialization.h"
 
+#include "deeplocalizer_tagger.h"
+
 class QPainter;
 
 namespace deeplocalizer {
 
-const int TAG_WIDTH = 64;
-const int TAG_HEIGHT = 64;
-const cv::Point2i TAG_CENTER{TAG_WIDTH / 2, TAG_HEIGHT / 2};
-const cv::Size2i TAG_SIZE{TAG_WIDTH, TAG_HEIGHT};
 
 enum TagType {
     IsTag,
