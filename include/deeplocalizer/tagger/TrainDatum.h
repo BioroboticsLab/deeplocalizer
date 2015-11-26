@@ -5,43 +5,39 @@
 #include <caffe/proto/caffe.pb.h>
 #include "Tag.h"
 #include "Image.h"
+#include "deeplocalizer_tagger.h"
 
 namespace deeplocalizer {
 
 class TrainDatum {
 public:
-    TrainDatum(const std::string &image_filename, const Tag &tag, cv::Mat mat,
-                  cv::Point2i translation, double rotation_angle);
+    TrainDatum(const cv::Mat mat, cv::Point2i center, double rotation_angle, double taginess,
+               std::string description="");
 
-    TrainDatum(const std::string & image_filename, const Tag &tag,
-              cv::Mat mat);
-
-    const std::string filename() const;
     void draw(QPainter & painter) const;
-    const Tag & tag() const {
-        return _tag;
-    };
-    const cv::Point2i & translation() const {
-        return _translation;
-    };
-    double rotation_angle() const {
-        return _rotation_angle;
-    };
-    void setMat(cv::Mat mat) {
-        _mat = mat;
+    inline const cv::Point2i & center() const {
+        return _center;
     }
-
-    const cv::Mat & mat() const {
+    inline double rotation_angle() const {
+        return _rotation_angle;
+    }
+    inline double taginess() const {
+        return _taginess;
+    }
+    inline const cv::Mat & mat() const {
         return _mat;
-    };
+    }
+    inline const std::string & description() const {
+        return _description;
+    }
     caffe::Datum toCaffe() const;
 
 private:
-    const std::string _original_image_filename;
-    const Tag _tag;
     cv::Mat _mat;
-    const cv::Point2i _translation;
-    const double _rotation_angle;
+    cv::Point2i _center;
+    double _rotation_angle;
+    double _taginess;
+    std::string _description;
 };
 }
 

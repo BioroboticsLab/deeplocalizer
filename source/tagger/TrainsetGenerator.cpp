@@ -1,43 +1,39 @@
+
 #include "TrainsetGenerator.h"
 
 #include <opencv2/core/core.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <QDebug>
+#include <QTime>
 #include <thread>
 
 #include "utils.h"
 #include "Dataset.h"
 #include "DataWriter.h"
 
+
 namespace deeplocalizer {
 
-
 TrainsetGenerator::TrainsetGenerator() :
-    TrainsetGenerator(RATIO_AROUND_TO_UNIFORM_DEFAULT, RATIO_TRUE_TO_FALSE_SAMPLES_DEFAULT, false)
+    TrainsetGenerator(std::make_unique<DevNullWriter>())
 {}
 
-TrainsetGenerator::TrainsetGenerator(double ratio_around_uniform, double ratio_true_false) :
-    TrainsetGenerator(ratio_around_uniform, ratio_true_false, std::make_unique<DevNullWriter>())
-{}
+TrainsetGenerator::TrainsetGenerator(std::unique_ptr<DataWriter> writer,
+                                     double sample_rate, double scale, bool use_rotation)
 
-TrainsetGenerator::TrainsetGenerator(double ratio_around_uniform, double ratio_true_false,
-                                     std::unique_ptr<DataWriter> writer)
     :
     _random_gen(_rd()),
     _angle_dis(0, 360),
-    _translation_dis(MIN_TRANSLATION, MAX_TRANSLATION),
-    _around_wrong_dis(MIN_AROUND_WRONG, MAX_AROUND_WRONG),
-    _ratio_around_uniform(ratio_around_uniform),
-    _ratio_true_false(ratio_true_false),
-    _writer(std::move(writer)) {
-}
+    _writer(std::move(writer)),
+    _sample_rate(sample_rate),
+    _scale(scale),
+    _use_rotation(use_rotation)
+{}
 
 TrainsetGenerator::TrainsetGenerator(TrainsetGenerator &&gen) :
     QObject(nullptr),
     _random_gen(_rd()),
     _angle_dis(std::move(gen._angle_dis)),
-    _translation_dis(std::move(gen._translation_dis)),
-    _around_wrong_dis(std::move(gen._around_wrong_dis)),
     _writer(std::move(gen._writer)) { }
 
 cv::Mat TrainsetGenerator::randomAffineTransformation(const cv::Point2f & center) {
@@ -47,231 +43,134 @@ cv::Mat TrainsetGenerator::randomAffineTransformation(const cv::Point2f & center
     return cv::getRotationMatrix2D(center, angle, scale);
 }
 
-cv::Mat TrainsetGenerator::rotate(const cv::Mat & src, double degrees) {
-    cv::Mat frameRotated;
-    int diagonal = int(sqrt(src.cols * src.cols + src.rows * src.rows));
-    int offsetX = (diagonal - src.cols) / 2;
-    int offsetY = (diagonal - src.rows) / 2;
+cv::Mat rotateSubimage(const cv::Mat & src,
+                                           cv::Point2i center,
+                                           double degrees) {
+    cv::Mat subimage = getSubimage(src, tagBoxForCenter(center), TAG_WIDTH/2);
+    cv::Mat rotated;
+    int c = subimage.cols;
+    int r = subimage.rows;
+    int diagonal = int(sqrt(c*c + r*r));
+    int offsetX = (diagonal - c) / 2;
+    int offsetY = (diagonal - r) / 2;
     cv::Mat targetMat(diagonal, diagonal, src.type(), cv::Scalar(0));
-    cv::Point2f src_center(targetMat.cols / 2.0f, targetMat.rows / 2.0f);
-    src.copyTo(targetMat.rowRange(offsetY, offsetY + src.rows)
-                       .colRange(offsetX, offsetX + src.cols));
-    cv::Mat rot_mat = cv::getRotationMatrix2D(src_center, degrees, 1.0);
-    cv::warpAffine(targetMat, frameRotated, rot_mat, targetMat.size());
-    return frameRotated;
-}
-
-TrainDatum TrainsetGenerator::trainData(const ImageDesc & desc, const Tag &tag,
-                                       const cv::Mat & subimage) {
-    double angle = _angle_dis(_random_gen);
-    cv::Mat rot_img = rotate(subimage, angle);
-    int trans_x, trans_y;
-    do {
-        trans_x = _translation_dis(_random_gen);
-        trans_y = _translation_dis(_random_gen);
-    } while(abs(trans_x * trans_y) > pow(TAG_WIDTH/3, 2));
-    cv::Point2f rot_center(rot_img.cols / 2 + trans_x,
-                           rot_img.rows / 2 + trans_y);
-    cv::Rect box(int(rot_center.x - TAG_WIDTH / 2),
-                 int(rot_center.y - TAG_HEIGHT / 2),
+    cv::Point2f target_center(targetMat.cols / 2.0f, targetMat.rows / 2.0f);
+    subimage.copyTo(targetMat.rowRange(offsetY, offsetY + r)
+                       .colRange(offsetX, offsetX + c));
+    cv::Mat rot_mat = cv::getRotationMatrix2D(target_center, degrees, 1.0);
+    cv::warpAffine(targetMat, rotated, rot_mat, targetMat.size());
+    cv::Rect box(int(target_center.x - TAG_WIDTH / 2),
+                 int(target_center.y - TAG_HEIGHT / 2),
                  TAG_WIDTH, TAG_HEIGHT);
-    return TrainDatum(desc.filename, tag, rot_img(box).clone(),
-                     cv::Point2i(trans_x, trans_y), angle);
+    return rotated(box).clone();
 }
 
-void TrainsetGenerator::trueSamples(
-        const ImageDesc & desc, const Tag &tag, const cv::Mat & subimage,
-        std::vector<TrainDatum> & train_data) {
-    if(! tag.isTag()) return;
-
-    for(unsigned int i = 0; i < samples_per_tag; i++) {
-        train_data.emplace_back(trainData(desc, tag, subimage));
-    }
-}
-
-void TrainsetGenerator::trueSamples(const ImageDesc &desc,
-                                    std::vector<TrainDatum> &train_data) {
-    Image img = Image(desc);
-    for(const auto & tag : desc.getTags()) {
-        if(tag.isTag()) {
-            static size_t border = TAG_WIDTH / 2;
-            cv::Mat subimage =  tag.getSubimage(img.getCvMat(), border);
-            trueSamples(desc, tag, subimage, train_data);
-        }
-    }
-}
-
-std::vector<cv::Rect> getAllBoxes(const std::vector<Tag> & tags) {
+std::vector<cv::Rect> getAllTagBoxes(const std::vector<Tag> & tags) {
     std::vector<cv::Rect>  boxes;
     for (auto & tag : tags) {
-        boxes.emplace_back(tag.getBoundingBox());
+        if(tag.isTag()) {
+            boxes.emplace_back(tag.getBoundingBox());
+        }
     }
     return boxes;
 }
 
 void TrainsetGenerator::process(const ImageDesc &desc,
-                                    std::vector<TrainDatum> &train_data) {
-    trueSamples(desc, train_data);
-    wrongSamples(desc, train_data);
-}
+                                std::vector<TrainDatum> &train_data) {
 
-void TrainsetGenerator::wrongSamplesAroundTag(const Tag &tag,
-                                           const ImageDesc &desc,
-                                           const Image &img,
-                                           std::vector<TrainDatum> &train_data) {
-    if(not tag.isTag()) return;
-    std::vector<cv::Rect> nearbyBoxes = getNearbyTagBoxes(tag, desc);
-    cv::Rect img_rect = cv::Rect(cv::Point(0, 0), img.getCvMat().size());
-    double to_sample = floor(_avg_samples_per_tag);
-    _samples_around_err += _avg_samples_per_tag - to_sample;
-    if (_samples_around_err > 1) {
-        to_sample += floor(_samples_around_err);
-        _samples_around_err -= floor(_samples_around_err);
+    Image image(desc);
+    const static int ndim = 2;
+    cv::Mat image_mat = image.getCvMat();
+    std::uniform_int_distribution<> x_dis(0, image_mat.cols);
+    std::uniform_int_distribution<> y_dis(0, image_mat.rows);
+    std::uniform_real_distribution<> acceptance_dis(0., 1.);
+
+    auto generateRandomPoints = [&](const size_t n) {
+        cv::Mat points(n, ndim, CV_32F);
+        for(size_t i = 0; i < n; i++) {
+            points.at<float>(i, 0) = static_cast<float>(x_dis(_random_gen));
+            points.at<float>(i, 1) = static_cast<float>(y_dis(_random_gen));
+        }
+        return points;
+    };
+
+    auto boxes = getAllTagBoxes(desc.getTags());
+    cv::Mat tag_centers(boxes.size(), ndim, CV_32F);
+    for(size_t i = 0; i < boxes.size(); i++) {
+        auto & box = boxes.at(i);
+        tag_centers.at<float>(i, 0) = static_cast<float>(box.x + box.width/2);
+        tag_centers.at<float>(i, 1) = static_cast<float>(box.y + box.height/2);
     }
-    for(size_t samples = 0; samples < to_sample; ) {
-        cv::Rect box = proposeWrongBoxAround(tag);
-        bool contains = (img_rect & box).area() == box.area();
-        if (contains && intersectsNone(nearbyBoxes, box)) {
-            Tag wrong_tag{box};
-            wrong_tag.setType(TagType::NoTag);
-            cv::Mat subimage = wrong_tag.getSubimage(img.getCvMat());
-            TrainDatum datum(img.filename(), wrong_tag, subimage, cv::Point2i(0, 0), 0);
-            train_data.push_back(datum);
-            samples++;
+    cv::flann::Index tags_index(tag_centers,
+                                cv::flann::KDTreeIndexParams(1),
+                                cvflann::FLANN_DIST_L2);
+
+    auto neighborsDist = [&](const cv::Mat & points) {
+        static const int k = 1;
+        cv::Mat neighbors_idx; // (points.rows, k, CV_32S);
+        cv::Mat dist; // (points.rows, k, CV_32F);
+        tags_index.knnSearch(points, neighbors_idx, dist, k, cv::flann::SearchParams(64));
+        return std::make_pair(neighbors_idx, dist);
+    };
+
+    const size_t start_size =  train_data.size();
+    while(train_data.size() - start_size < 8*_sample_rate*boxes.size()) {
+        cv::Mat random_points =
+                generateRandomPoints(desc.getTags().size());
+        auto neighbors_dist = neighborsDist(random_points);
+        auto dists = std::get<1>(neighbors_dist);
+        for (int i = 0; i < random_points.rows; i++) {
+            cv::Point2i center(static_cast<int>(random_points.at<float>(i, 0)),
+                               static_cast<int>(random_points.at<float>(i, 1)));
+            float d = dists.at<float>(i, 0);
+            double tagness = exp(-0.5 * d / pow(28, 2));
+
+            if (pow(tagness, 2) + acceptance_dis(_random_gen) >= 0.95) {
+                cv::Mat subimage;
+                cv::Rect box = tagBoxForCenter(center);
+                double angle = 0.;
+                if (_use_rotation && tagness >= 0.8) {
+                    angle = _angle_dis(_random_gen);
+                    subimage = rotateSubimage(image_mat, center, angle);
+
+                } else {
+                    subimage = getSubimage(image_mat, box);
+                }
+
+                std::stringstream description;
+                description << image.filename() << "_" << center.x << "_" << center.y << "_" << tagness;
+                train_data.emplace_back(TrainDatum(subimage, center, angle, tagness,
+                                                   description.str()));
+            }
         }
     }
 }
-size_t countTrueTags(const std::vector<Tag> & tags) {
-    return std::count_if(tags.cbegin(), tags.cend(), [](const Tag & tag) {
-        return not tag.isExclude();
-    });
-}
 
-void TrainsetGenerator::wrongSamplesUniform(
-            const ImageDesc &desc,  const Image &img,
-            std::vector<TrainDatum> &train_data) {
-    const auto allBoxes = getAllBoxes(desc.getTags());
-    std::uniform_int_distribution<> x_dis(0, img.getCvMat().cols);
-    std::uniform_int_distribution<> y_dis(0, img.getCvMat().rows);
-    const cv::Rect img_rect = cv::Rect(cv::Point(0, 0), img.getCvMat().size());
-    const size_t nb_tags = countTrueTags(desc.getTags());
-    const size_t to_sample = static_cast<size_t>(
-                round(nb_tags * samples_per_tag / _ratio_true_false / (1+_ratio_around_uniform)));
-    size_t samples = 0;
-    while(samples < to_sample) {
-        cv::Rect box(x_dis(_random_gen), y_dis(_random_gen),
-                     TAG_WIDTH, TAG_HEIGHT);
-        bool contains = (img_rect & box).area() == box.area();
-        if (contains && intersectsNone(allBoxes, box)) {
-            Tag wrong_tag{box};
-            wrong_tag.setType(TagType::NoTag);
-            cv::Mat subimage = wrong_tag.getSubimage(img.getCvMat());
-            TrainDatum datum(img.filename(), wrong_tag, subimage, cv::Point2i(0, 0), 0);
-            train_data.push_back(datum);
-            samples++;
-        }
-    }
-}
-
-void TrainsetGenerator::wrongSamplesAround(
-        const ImageDesc &desc, const Image &img,
-        std::vector<TrainDatum> &train_data) {
-
-    const size_t nb_tags = countTrueTags(desc.getTags());
-    const double total_to_sample = nb_tags * samples_per_tag * _ratio_around_uniform / (1+_ratio_around_uniform)
-            / _ratio_true_false;
-    _avg_samples_per_tag = total_to_sample / nb_tags;
-    _samples_around_err = 0;
-    for(const auto & tag: desc.getTags()) {
-        if(tag.isExclude()) continue;
-        wrongSamplesAroundTag(tag, desc, img, train_data);
-    }
-}
-void TrainsetGenerator::wrongSamples(const ImageDesc &desc,
-                                     std::vector<TrainDatum> &train_data) {
-    Image img{desc};
-    wrongSamplesAround(desc, img, train_data);
-    wrongSamplesUniform(desc, img, train_data);
-}
-
-std::vector<cv::Rect> TrainsetGenerator::getNearbyTagBoxes(const Tag &tag,
-                                                           const ImageDesc &desc) {
-    auto center = tag.center();
-    cv::Rect nearbyArea{center.x-MAX_AROUND_WRONG-TAG_WIDTH,
-                        center.y-MAX_AROUND_WRONG-TAG_HEIGHT,
-                        2*MAX_AROUND_WRONG+2*TAG_WIDTH,
-                        2*MAX_AROUND_WRONG+2*TAG_WIDTH};
-    std::vector<cv::Rect> nearbyBoxes;
-    for(const auto & other_tag: desc.getTags()) {
-        if((other_tag.getBoundingBox() & nearbyArea).area()) {
-            auto center = other_tag.center();
-            cv::Rect bb{
-                center.x - TAG_WIDTH  / 2,
-                center.y - TAG_HEIGHT / 2,
-                TAG_HEIGHT,
-                TAG_WIDTH,
-            };
-            nearbyBoxes.emplace_back(bb);
-        }
-    }
-    return nearbyBoxes;
-}
-
-cv::Rect TrainsetGenerator::proposeWrongBoxAround(const Tag &tag) {
-    auto center = tag.center();
-    auto wrong_center = center + cv::Point2i(wrongAroundCoordinate(),
-                                             wrongAroundCoordinate());
-    return cv::Rect(wrong_center.x - TAG_WIDTH  / 2,
-                    wrong_center.y - TAG_HEIGHT / 2,
-                    TAG_WIDTH, TAG_HEIGHT);
-}
-
-bool TrainsetGenerator::intersectsNone(const std::vector<cv::Rect> &tag_boxes,
-                                       const cv::Rect & wrong_box) const {
-
-    return std::all_of(
-            tag_boxes.cbegin(), tag_boxes.cend(),
-            [&wrong_box, this](const auto & box) {
-                return (box & wrong_box).area() <= box.area()*max_intersection;
-    });
-}
-
-
-int TrainsetGenerator::wrongAroundCoordinate() {
-    int x = _around_wrong_dis(_random_gen);
-    if(rand() % 2) {
-        return x;
-    } else {
-        return -x;
-    }
-}
 TrainsetGenerator TrainsetGenerator::operator=(TrainsetGenerator &&other) {
     return TrainsetGenerator(std::move(other));
-}
-void TrainsetGenerator::process(const std::vector<ImageDesc> &descs) {
-    return process(descs.cbegin(), descs.cend());
 }
 
 void TrainsetGenerator::postProcess(std::vector<TrainDatum> & data) const
 {
-    if (scale == 1) {
+    if (_scale == 1) {
         return;
     }
-    for(auto & datum : data) {
+    for(size_t i = 0; i < data.size(); i++) {
+        auto & datum = data.at(i);
         cv::Mat mat = datum.mat();
-        if (scale != 1) {
-            cv::Mat scaledMat;
-            cv::resize(mat, scaledMat, scaledMat.size(), scale, scale);
-            mat = scaledMat;
-        }
-        datum.setMat(mat);
+        cv::Mat scaledMat;
+        cv::resize(mat, scaledMat, scaledMat.size(), _scale, _scale);
+        TrainDatum scaled_datum(scaledMat,  datum.center(),
+                                datum.rotation_angle(), datum.taginess());
+
+        data.at(i) = scaled_datum;
     }
 }
 
 void TrainsetGenerator::processParallel(const std::vector<ImageDesc> &img_descs) {
     using Iter = std::vector<ImageDesc>::const_iterator;
     std::vector<std::thread> threads;
-    auto fn = std::mem_fn<void(Iter, Iter)>(&TrainsetGenerator::process<Iter>);
+    auto fn = std::mem_fn<void(Iter, Iter)>(&TrainsetGenerator::generateAndWrite<Iter>);
 
     _start_time = std::chrono::system_clock::now();
     _n_todo = img_descs.size();

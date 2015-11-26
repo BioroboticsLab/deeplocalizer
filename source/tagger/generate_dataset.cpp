@@ -11,6 +11,7 @@
 #include "ProposalGenerator.h"
 #include "qt_helper.h"
 #include "utils.h"
+#include "deeplocalizer_tagger.h"
 
 using namespace deeplocalizer;
 using namespace std::chrono;
@@ -27,17 +28,12 @@ time_point<system_clock> start_time;
 void setupOptions() {
     desc_option.add_options()
             ("help,h", "Print help messages")
-            ("format,f", po::value<std::string>(), "Format either `lmdb`, `images`, `hdf5` or `all`. Default is `lmdb`. "
-                                                   "`all` will save it both with lmdb and as images.")
-            ("samples-per-tag,s", po::value<unsigned int>(), "Number of rotated and translated images per tag. Must be a multiple of 4."
-                    " Default is 32.")
-            ("scale,c", po::value<double>(), "Scale applied to the tag images. Default is 1.")
+            ("format,f", po::value<std::string>()->default_value("hdf5"), "Format either `images`, `hdf5`. Default is `hdf5`. ")
+            ("sample-rate,s", po::value<double>()->default_value(32), "Number samples per tag.")
+            ("scale,c", po::value<double>()->default_value(1), "Scale applied to the tag images. Default is 1.")
+            ("use-rotation,r", po::value<bool>()->default_value(true), "Rotate subimages with a tagness over 0.8")
             ("pathfile", po::value<std::string>(), "Pathfile to the images")
-            ("output-dir,o", po::value<std::string>(), "Output images to this directory")
-            ("ratio-around-to-uniform", po::value<double>()->default_value(TrainsetGenerator::RATIO_AROUND_TO_UNIFORM_DEFAULT),
-                    "Ratio of around-tag to uniform samples")
-            ("ratio-true-to-false", po::value<double>()->default_value(TrainsetGenerator::RATIO_TRUE_TO_FALSE_SAMPLES_DEFAULT),
-                    "Ratio of true to false samples");
+            ("output-dir,o", po::value<std::string>(), "Output images to this directory");
     positional_opt.add("pathfile", 1);
 }
 
@@ -46,21 +42,15 @@ int run(QCoreApplication &,
         std::string pathfile,
         Dataset::Format save_format,
         std::string output_dir,
-        unsigned int samples_per_tag,
-        double ratio_around_uniform,
-        double ratio_true_false,
-        double scale
+        double sample_rate,
+        double scale,
+        bool use_rotation
 ) {
     std::cout << "loading training" << std::endl;
     const auto img_descs = ImageDesc::fromPathFile(pathfile, ManuallyTagger::IMAGE_DESC_EXT);
-    TrainsetGenerator gen{
-            ratio_around_uniform,
-            ratio_true_false,
-            DataWriter::fromSaveFormat(output_dir, save_format)
-    };
-    gen.samples_per_tag = samples_per_tag;
-    gen.wrong_samples_per_tag = samples_per_tag;
-    gen.scale = scale;
+    TrainsetGenerator gen(
+            DataWriter::fromSaveFormat(output_dir, save_format),
+            sample_rate, scale, use_rotation);
     std::cout << "Generating data set: " << std::endl;
     gen.processParallel(img_descs);
     std::cout << "Saved dataset to: " << output_dir << std::endl;
@@ -68,9 +58,8 @@ int run(QCoreApplication &,
 }
 
 void printUsage() {
-    std::cout << "Usage: generate_proposals --test <TEST_FILE> --train <TRAIN_FILE> -f lmdb -o <DATA_DIR>"<< std::endl;
-    std::cout << "    where <TEST_FILE> contains paths to images from which the test set will be generated."<< std::endl;
-    std::cout << "          <TRAIN_FILE> contains paths to images from which the train set will be generated."<< std::endl;
+    std::cout << "Usage: generate_proposals  -f hdf5 -o <DATA_DIR> <FILE>"<< std::endl;
+    std::cout << "    where <FILE> contains paths to images"<< std::endl;
     std::cout << "          <DATA_DIR> is the output directory."<< std::endl;
     std::cout << desc_option << std::endl;
 }
@@ -88,7 +77,7 @@ int main(int argc, char* argv[])
         printUsage();
         return 0;
     }
-    if(vm.count("pathfile") && vm.count("output-dir") && vm.count("format")) {
+    if(vm.count("pathfile") && vm.count("output-dir")) {
         auto format_str = vm.at("format").as<std::string>();
         auto opt_format = Dataset::parseFormat(format_str);
         if(not opt_format){
@@ -96,20 +85,18 @@ int main(int argc, char* argv[])
             std::cout << "Save format must be either `lmdb`, `images`, `hdf5` or `all`" << std::endl;
             return 1;
         }
-        unsigned int samples_per_tag = 32;
-        if(vm.count("samples-per-tag")) {
-            samples_per_tag = vm.at("samples-per-tag").as<unsigned int>();
-        }
+        double sample_rate = vm.at("sample-rate").as<double>();
         auto pathfile = vm.at("pathfile").as<std::string>();
         auto output_dir = vm.at("output-dir").as<std::string>();
-        auto ratio_around_uniform = vm.at("ratio-around-to-uniform").as<double>();
-        auto ratio_true_false = vm.at("ratio-true-to-false").as<double>();
-        double scale = 1;
-        if (vm.count("scale"))  {
-            scale = vm.at("scale").as<double>();
+        double scale = vm.at("scale").as<double>();
+        bool use_rotation = vm.at("use-rotation").as<bool>();
+        try {
+            return run(qapp, pathfile, opt_format.get(), output_dir, sample_rate,
+                       scale, use_rotation);
+        } catch(const std::exception & e) {
+            std::cerr << "An Exception occurred: " << e.what() << std::endl;
+            return 1;
         }
-        return run(qapp, pathfile, opt_format.get(), output_dir, samples_per_tag,
-                   ratio_around_uniform, ratio_true_false, scale);
     } else {
         std::cout << "No pathfile, format or output directory given." << std::endl;
         printUsage();
