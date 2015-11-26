@@ -57,7 +57,7 @@ private:
     void saveDataHDF5Dataset(const hid_t file_id);
     void writeBufferToFile();
     std::string nextFilename();
-    const size_t MAX_HDF5_FILE = 1 << 28;  // ~ 256MB
+    const size_t MAX_HDF5_FILE = 1 << 29;  // ~ 512MB
     std::ofstream _txt_file;
 
     boost::filesystem::path _output_dir;
