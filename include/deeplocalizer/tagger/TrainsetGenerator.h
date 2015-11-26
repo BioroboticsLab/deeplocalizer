@@ -21,7 +21,7 @@ public:
     TrainsetGenerator(TrainsetGenerator && gen);
 
     TrainsetGenerator(std::unique_ptr<DataWriter> writer, double sample_rate=32,
-                      double scale=1., bool use_rotation=true);
+                      double scale=1., bool use_rotation=true, double acceptance_rate=0.05);
     TrainsetGenerator operator=(TrainsetGenerator && other);
     ~TrainsetGenerator() = default;
 
@@ -67,6 +67,8 @@ private:
     double _sample_rate = 32;
     double _scale = 1;
     bool _use_rotation = true;
+    double _acceptance_rate = 0.05;
+
     std::atomic_uint _n_done;
     unsigned long _n_todo;
     void incrementDone();

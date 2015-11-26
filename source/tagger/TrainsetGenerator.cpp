@@ -18,8 +18,9 @@ TrainsetGenerator::TrainsetGenerator() :
     TrainsetGenerator(std::make_unique<DevNullWriter>())
 {}
 
-TrainsetGenerator::TrainsetGenerator(std::unique_ptr<DataWriter> writer,
-                                     double sample_rate, double scale, bool use_rotation)
+TrainsetGenerator::TrainsetGenerator(
+        std::unique_ptr<DataWriter> writer, double sample_rate,
+        double scale, bool use_rotation, double acceptance_rate)
 
     :
     _random_gen(_rd()),
@@ -27,7 +28,8 @@ TrainsetGenerator::TrainsetGenerator(std::unique_ptr<DataWriter> writer,
     _writer(std::move(writer)),
     _sample_rate(sample_rate),
     _scale(scale),
-    _use_rotation(use_rotation)
+    _use_rotation(use_rotation),
+    _acceptance_rate(acceptance_rate)
 {}
 
 TrainsetGenerator::TrainsetGenerator(TrainsetGenerator &&gen) :
@@ -125,7 +127,7 @@ void TrainsetGenerator::process(const ImageDesc &desc,
             float d = dists.at<float>(i, 0);
             double tagness = exp(-0.5 * d / pow(28, 2));
 
-            if (pow(tagness, 2) + acceptance_dis(_random_gen) >= 0.95) {
+            if (pow(tagness, 2) + acceptance_dis(_random_gen) >= 1 - _acceptance_rate) {
                 cv::Mat subimage;
                 cv::Rect box = tagBoxForCenter(center);
                 double angle = 0.;

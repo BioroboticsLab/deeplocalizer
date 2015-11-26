@@ -32,6 +32,9 @@ void setupOptions() {
             ("sample-rate,s", po::value<double>()->default_value(32), "Number samples per tag.")
             ("scale,c", po::value<double>()->default_value(1), "Scale applied to the tag images. Default is 1.")
             ("use-rotation,r", po::value<bool>()->default_value(true), "Rotate subimages with a tagness over 0.8")
+            ("acceptance-rate,a", po::value<double>()->default_value(0.05),
+             "The rate at which false images are accepted. 0 means never and 1. means allways. "
+             "A value around 0.05-0.15 should work fine.")
             ("pathfile", po::value<std::string>(), "Pathfile to the images")
             ("output-dir,o", po::value<std::string>(), "Output images to this directory");
     positional_opt.add("pathfile", 1);
@@ -44,13 +47,14 @@ int run(QCoreApplication &,
         std::string output_dir,
         double sample_rate,
         double scale,
-        bool use_rotation
+        bool use_rotation,
+        double acceptance_rate
 ) {
     std::cout << "loading training" << std::endl;
     const auto img_descs = ImageDesc::fromPathFile(pathfile, ManuallyTagger::IMAGE_DESC_EXT);
     TrainsetGenerator gen(
             DataWriter::fromSaveFormat(output_dir, save_format),
-            sample_rate, scale, use_rotation);
+            sample_rate, scale, use_rotation, acceptance_rate);
     std::cout << "Generating data set: " << std::endl;
     gen.processParallel(img_descs);
     std::cout << "Saved dataset to: " << output_dir << std::endl;
@@ -90,9 +94,10 @@ int main(int argc, char* argv[])
         auto output_dir = vm.at("output-dir").as<std::string>();
         double scale = vm.at("scale").as<double>();
         bool use_rotation = vm.at("use-rotation").as<bool>();
+        double acceptance_rate = vm.at("acceptance-rate").as<double>();
         try {
             return run(qapp, pathfile, opt_format.get(), output_dir, sample_rate,
-                       scale, use_rotation);
+                       scale, use_rotation, acceptance_rate);
         } catch(const std::exception & e) {
             std::cerr << "An Exception occurred: " << e.what() << std::endl;
             return 1;
