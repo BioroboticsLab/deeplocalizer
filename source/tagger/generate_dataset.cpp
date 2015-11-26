@@ -29,7 +29,8 @@ void setupOptions() {
     desc_option.add_options()
             ("help,h", "Print help messages")
             ("format,f", po::value<std::string>()->default_value("hdf5"), "Format either `images`, `hdf5`. Default is `hdf5`. ")
-            ("sample-rate,s", po::value<double>()->default_value(32), "Number samples per tag.")
+            ("sample-rate,s", po::value<double>()->default_value(32),
+             "The sample-rate determines the number of tags to sample. A sample rate of 32 means that for every actual tag, 32 true and false samples generated.")
             ("scale,c", po::value<double>()->default_value(1), "Scale applied to the tag images. Default is 1.")
             ("use-rotation,r", po::value<bool>()->default_value(true), "Rotate subimages with a tagness over 0.8")
             ("acceptance-rate,a", po::value<double>()->default_value(0.05),
