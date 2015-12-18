@@ -8,6 +8,9 @@
 #include "catch.hpp"
 #include <opencv2/highgui/highgui.hpp>
 #include <utils.h>
+
+#if USE_DEEPLOCALIZER
+
 #include "deeplocalizer/classifier/DataReader.h"
 #include <caffe/util/io.hpp>
 #include "TrainsetGenerator.h"
@@ -52,4 +55,4 @@ TEST_CASE( "TestDataReaderWriter", "" ) {
         io::remove_all(unique_path);
     }
 }
-
+#endif

@@ -1,6 +1,5 @@
 #include <QPainter>
 #include <boost/filesystem.hpp>
-#include <caffe/util/io.hpp>
 
 #include "utils.h"
 #include "TrainDatum.h"
