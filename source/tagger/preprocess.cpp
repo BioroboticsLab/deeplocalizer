@@ -1,6 +1,8 @@
 #include <boost/program_options.hpp>
 
 #include <chrono>
+#include <thread>
+#include <mutex>
 #include "Image.h"
 #include "utils.h"
 
@@ -28,6 +30,13 @@ void setupOptions() {
             ("binary-image", po::value<bool>()->default_value(false), "Save binary image from thresholding");
     positional_opt.add("pathfile", 1);
 }
+struct PreprocessOptions {
+    io::path output_dir;
+    bool use_hist_eq;
+    bool use_thresholding;
+    bool use_binary_image;
+    bool add_border;
+};
 
 io::path addWb(io::path filename) {
     io::path output_path(filename);
@@ -37,15 +46,21 @@ io::path addWb(io::path filename) {
     return output_path;
 }
 
-void writeOutputPathfile(io::path pathfile, const std::vector<std::string> && output_paths) {
+using pathss_t = std::vector<std::shared_ptr<std::vector<std::string>>>;
+
+void writeOutputPathfile(io::path pathfile, const pathss_t &output_pathss) {
     std::ofstream of(pathfile.string());
-    for(const auto & path : output_paths) {
-        of << path << '\n';
+    size_t nb_images = 0;
+    for (const auto &paths : output_pathss) {
+        nb_images += paths->size();
+        for (const auto & path : *paths) {
+            of << path << '\n';
+        }
     }
     of << std::flush;
 
     std::cout << std::endl;
-    std::cout << "Add border to " << output_paths.size() << " images. Saved new images paths to: " << std::endl;
+    std::cout << "Add border to " << nb_images << " images. Saved new images paths to: " << std::endl;
     std::cout << pathfile.string() << std::endl;
 }
 
@@ -83,47 +98,78 @@ void makeBorder(cv::Mat & mat) {
                        cv::BORDER_REPLICATE | cv::BORDER_ISOLATED);
     mat = mat_with_border;
 }
-void processImage(Image & img, bool use_hist_eq, bool use_thresholding,
-                  bool use_binary_image,
-                  bool make_border) {
+void processImage(Image & img, const PreprocessOptions & opt) {
     cv::Mat & mat = img.getCvMatRef();
 
-    if (make_border) {
+    if (opt.add_border) {
         makeBorder(mat);
     }
-    if (use_hist_eq) {
+    if (opt.use_hist_eq) {
         localHistogramEq(mat);
     }
-    if (use_thresholding) {
-        adaptiveTresholding(mat, use_binary_image);
+    if (opt.use_thresholding) {
+        adaptiveTresholding(mat, opt.use_binary_image);
     }
 }
-
-int run(const std::vector<ImageDesc> image_descs, io::path & output_dir,
-        optional<io::path> output_pathfile,
-        bool use_hist_eq,
-        bool use_thresholding,
-        bool use_binary_image,
-        bool border) {
-    io::create_directories(output_dir);
-    start_time = system_clock::now();
-    printProgress(start_time, 0);
-    std::vector<std::string> output_paths;
-    for (unsigned int i = 0; i < image_descs.size(); i++) {
+void threadWorkerFn(const std::vector<ImageDesc> & image_descs,
+                    const size_t start, const size_t end,
+                    std::shared_ptr<std::vector<std::string>>  output_paths,
+                    const PreprocessOptions & opt,
+                    size_t & nb_done,
+                    std::mutex & cout_mutex) {
+    for(size_t i = start; i < end; i++) {
         const ImageDesc & desc = image_descs.at(i);
         Image img(desc);
-        processImage(img, use_hist_eq, use_thresholding, use_binary_image, border);
+        processImage(img, opt);
         auto input_path =  io::path(desc.filename);
-        auto output = addWb(output_dir / input_path.filename());
+        auto output = addWb(opt.output_dir / input_path.filename());
         if(not img.write(output)) {
+            std::lock_guard<std::mutex> look(cout_mutex);
             std::cerr << "Fail to write image : " << output.string() << std::endl;
-            return 1;
+            return;
         }
-        output_paths.emplace_back(output.string());
-        printProgress(start_time, static_cast<double>(i+1)/image_descs.size());
+        output_paths->push_back(output.string());
+        {
+            std::lock_guard<std::mutex> look(cout_mutex);
+            nb_done++;
+            printProgress(start_time, static_cast<double>(nb_done)/image_descs.size());
+        }
     }
-    writeOutputPathfile(output_pathfile.get_value_or(output_dir / "images.txt"),
-                        std::move(output_paths));
+}
+int run(const std::vector<ImageDesc> image_descs,
+        optional<io::path> output_pathfile,
+        const PreprocessOptions  & opt
+        ) {
+    io::create_directories(opt.output_dir);
+    start_time = system_clock::now();
+    printProgress(start_time, 0);
+    const size_t nb_cpus = std::max(static_cast<unsigned int>(1.5*std::thread::hardware_concurrency()), 1u);
+    std::vector<std::thread> threads;
+    size_t nb_done = 0;
+
+    pathss_t output_pathss;
+    size_t part = image_descs.size()/nb_cpus;
+    for(size_t i = 0; i < nb_cpus; i++) {
+        std::shared_ptr<std::vector<std::string>> out_paths = std::make_shared<std::vector<std::string>>();
+        out_paths->reserve(2*part);
+        output_pathss.push_back(out_paths);
+    }
+    for(size_t i = 0; i < nb_cpus; i++) {
+        size_t start = i*part;
+        size_t end = (i+1)*part;
+        if (i + 1 == nb_cpus)  {
+            end = image_descs.size();
+        }
+        std::mutex cout_look;
+        threads.push_back(std::thread(&threadWorkerFn, std::cref(image_descs),
+                                      start, end,
+                                      output_pathss.at(i),
+                                      std::cref(opt), std::ref(nb_done), std::ref(cout_look)));
+    }
+    for(auto & thread : threads) {
+        thread.join();
+    }
+    writeOutputPathfile(output_pathfile.get_value_or(opt.output_dir / "images.txt"), output_pathss);
     return 0;
 }
 
@@ -157,9 +203,15 @@ int main(int argc, char* argv[])
         if (use_binary_image) {
             use_threshold = true;
         }
-        bool border = vm.at("border").as<bool>();
-        run(image_descs, output_dir, output_pathfile, use_hist_eq, use_threshold,
-            use_binary_image, border);
+        bool add_border = vm.at("border").as<bool>();
+        PreprocessOptions opt {
+                output_dir,
+                use_hist_eq,
+                use_threshold,
+                use_binary_image,
+                add_border
+        };
+        run(image_descs, output_pathfile, opt);
     } else {
         std::cout << "No pathfile or output_dir are given" << std::endl;
         std::cout << "Usage: add_border [options] pathfile.txt "<< std::endl;
