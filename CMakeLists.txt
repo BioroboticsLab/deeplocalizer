@@ -39,11 +39,14 @@ else()
         SOURCE_DIR "${CMAKECONFIG_PATH}")
 endif()
 
+# uncomment to generate proposals
+# see issue #3
+set(USE_DEEPLOCALIZER OFF)
+set(BUILD_SHARED_LIBS ON)
 
-set(USE_DEEPLOCALIZER 1)
-set(BLAS Open CACHE STRING "Use openblas")
-set(BUILD_python Off)
-set(BUILD_python_layer Off)
+# set(BLAS Open CACHE STRING "Use openblas")
+# set(BUILD_python OFF)
+# set(BUILD_python_layer OFF)
 
 include_pipeline()
 
