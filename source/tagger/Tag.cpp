@@ -164,7 +164,7 @@ void Tag::drawEllipse(QPainter & p, int lineWidth, bool drawVote) const {
     p.rotate(e.getAngle());
     p.drawLine(-4, 0, 4, 0);
     p.drawLine(0, 4, 0, -4);
-    p.drawEllipse(zero, e.getAxis().width, e.getAxis().height);
+    p.drawEllipse(zero, int(e.getAxis().width), int(e.getAxis().height));
     p.restore();
 }
 
