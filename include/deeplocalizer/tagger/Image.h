@@ -66,7 +66,11 @@ public:
         return _mat;
     }
 
-    bool write(boost::filesystem::path path = {}) const;
+    bool write(const boost::filesystem::path & path = {}) {
+        return this->write(path, boost::optional<std::pair<int, int>>());
+    };
+    bool write(const boost::filesystem::path & path, boost::optional<std::pair<int, int>> compression) const;
+
     bool operator==(const Image & other) const;
     const std::string & filename() const {
         return _filename;

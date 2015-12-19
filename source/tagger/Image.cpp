@@ -142,13 +142,19 @@ Image::Image(const ImageDesc & descr) : _filename(descr.filename)  {
 }
 
 
-
-bool Image::write(io::path path) const {
+bool Image::write(const io::path & path, boost::optional<std::pair<int, int>> compression) const {
+    io::path p;
     if (path.empty()) {
-        return cv::imwrite(_filename, _mat);
+        p = _filename;
     } else {
-        return cv::imwrite(path.string(), _mat);
+        p = path;
     }
+    std::vector<int> compress_vec;
+    if (compression) {
+        compress_vec.push_back(std::get<0>(compression.get()));
+        compress_vec.push_back(std::get<1>(compression.get()));
+    }
+    return cv::imwrite(p.string(), _mat, compress_vec);
 }
 
 bool Image::operator==(const Image &other) const {
