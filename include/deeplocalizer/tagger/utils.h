@@ -65,20 +65,18 @@ inline void printProgress(const std::chrono::time_point<Clock> & start_time,
     auto spaces = std::string(width - progress_chars, ' ');
     cout << "\r " << static_cast<int>(progress * 100) << "% ["
     << crosses << spaces << "] ";
-    if (progress > 0.02) {
-        auto eta = elapsed / progress - elapsed;
-        auto h = duration_cast<hours>(eta).count();
-        auto m = duration_cast<minutes>(eta).count() - 60 * h;
-        auto s = duration_cast<seconds>(eta).count() - 60 * m - 60*60*h;
-        cout << "eta ";
-        if (h) {
-            cout << h << "h ";
-        }
-        if (h || m) {
-            cout << m << "m ";
-        }
-        cout << s << "s";
+    auto eta = elapsed / progress - elapsed;
+    auto h = duration_cast<hours>(eta).count();
+    auto m = duration_cast<minutes>(eta).count() - 60 * h;
+    auto s = duration_cast<seconds>(eta).count() - 60 * m - 60*60*h;
+    cout << "eta ";
+    if (h) {
+        cout << h << "h ";
     }
+    if (h || m) {
+        cout << m << "m ";
+    }
+    cout << s << "s";
     cout << "          " << std::flush;
 }
 
