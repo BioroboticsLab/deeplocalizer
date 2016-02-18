@@ -7,6 +7,8 @@
 #include <boost/archive/xml_iarchive.hpp>
 
 #include <catch.hpp>
+#include <json.hpp>
+
 #include "Image.h"
 #include "ProposalGenerator.h"
 #include "utils.h"
@@ -16,10 +18,10 @@ namespace io = boost::filesystem;
 using boost::optional;
 using boost::serialization::make_nvp;
 using namespace deeplocalizer;
-
+using json = nlohmann::json;
 TEST_CASE( "Serialization", "[serialize]" ) {
     ImageDesc img("image_path.jpeg");
-    Tag tag(cv::Rect(0, 0, 10, 20), optional<pipeline::Ellipse>());
+    Tag tag(cv::Rect(30, 40, TAG_WIDTH, TAG_HEIGHT), optional<pipeline::Ellipse>());
     auto uniquePath = io::unique_path("/tmp/%%%%%%%%%%%.xml");
     SECTION( "Tag" ) {
         INFO(uniquePath.string());
@@ -42,6 +44,28 @@ TEST_CASE( "Serialization", "[serialize]" ) {
             }
         }
         io::remove(uniquePath);
+    }
+}
+TEST_CASE( "JSON serialization", "[serialize]" ) {
+    ImageDesc img("image_path.jpeg");
+    Tag tag(cv::Rect(30, 40, TAG_WIDTH, TAG_HEIGHT), optional<pipeline::Ellipse>());
+    Tag tag_with_ell(cv::Rect(300, 400, TAG_WIDTH, TAG_HEIGHT), optional<pipeline::Ellipse>());
+    SECTION("simple tag") {
+        json j = tag.to_json();
+        Tag from_json = Tag::from_json(j);
+        REQUIRE(tag == from_json);
+    }
+    SECTION("tag with ellipse") {
+        json j = tag_with_ell.to_json();
+        Tag from_json = Tag::from_json(j);
+        REQUIRE(tag_with_ell == from_json);
+    }
+    img.addTag(tag);
+    img.addTag(tag_with_ell);
+    SECTION("image desc") {
+        json j = img.to_json();
+        ImageDesc from_json = ImageDesc::from_json(j);
+        REQUIRE(from_json == img);
     }
 }
 

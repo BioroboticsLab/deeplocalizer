@@ -7,10 +7,12 @@
 
 #include "Tag.h"
 #include "serialization.h"
+#include <json.hpp>
 
 class QPixmap;
 
 namespace deeplocalizer {
+
 
 class ImageDesc {
 public:
@@ -20,15 +22,20 @@ public:
     ImageDesc(const std::string filename, std::vector<Tag> _tags);
     QPixmap visualise_tags();
     void addTag(Tag&& tag);
+    void addTag(Tag tag);
     void setTags(std::vector<Tag> && tag);
     const std::vector<Tag> & getTags() const;
     std::vector<Tag> & getTags();
     bool operator==(const ImageDesc & other) const;
     void save();
     void save(const std::string &path);
+    nlohmann::json to_json() const;
+    static ImageDesc from_json(const nlohmann::json &);
+
     void setSavePathExtension(std::string ext);
     std::string savePath() const;
     static std::shared_ptr<ImageDesc> load(const std::string &path);
+
     static std::vector<ImageDesc> fromPathFile(const std::string &path,
                                                const std::string & image_desc_extension = "desc");
     static std::vector<ImageDesc> fromPaths(const std::vector<std::string> paths,

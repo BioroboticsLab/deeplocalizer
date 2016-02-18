@@ -38,6 +38,10 @@ else()
         GIT_TAG "cpm")
 endif()
 
+CPM_AddModule("cpm_nlohmann_json"
+    GIT_REPOSITORY "https://github.com/berleon/cpm_nlohmann_json.git"
+)
+
 CPM_Finish()
 
 
