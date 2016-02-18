@@ -7,6 +7,12 @@
 
 #include <ManuallyTagger.h>
 #include <TrainsetGenerator.h>
+#include <QPainter>
+#include <QTime>
+#include <QGraphicsScene>
+#include <QGraphicsView>
+#include <QGuiApplication>
+#include <QGraphicsPixmapItem>
 
 #include "ProposalGenerator.h"
 #include "qt_helper.h"
@@ -37,13 +43,13 @@ void setupOptions() {
              "The rate at which false images are accepted. 0 means never and 1. means allways. "
              "A value around 0.05-0.15 should work fine.")
             ("pathfile", po::value<std::string>(), "Pathfile to the images")
+            ("show", po::value<bool>()->default_value(false), "Visualise the sampling for the first image in the pathfile.")
             ("output-dir,o", po::value<std::string>(), "Output images to this directory");
     positional_opt.add("pathfile", 1);
 }
 
 
-int run(QCoreApplication &,
-        std::string pathfile,
+int run(const std::vector<ImageDesc> & img_descs,
         Dataset::Format save_format,
         std::string output_dir,
         double sample_rate,
@@ -52,13 +58,46 @@ int run(QCoreApplication &,
         double acceptance_rate
 ) {
     std::cout << "loading training" << std::endl;
-    const auto img_descs = ImageDesc::fromPathFile(pathfile, ManuallyTagger::IMAGE_DESC_EXT);
     TrainsetGenerator gen(
             DataWriter::fromSaveFormat(output_dir, save_format),
             sample_rate, scale, use_rotation, acceptance_rate);
     std::cout << "Generating data set: " << std::endl;
     gen.processParallel(img_descs);
     std::cout << "Saved dataset to: " << output_dir << std::endl;
+    return 0;
+}
+
+int run_show(QGuiApplication & qapp,
+         const std::vector<ImageDesc> & img_descs,
+         double sample_rate,
+         double scale,
+         bool use_rotation,
+         double acceptance_rate) {
+    std::vector<TrainDatum> data;
+    TrainsetGenerator gen(std::make_unique<DevNullWriter>(),
+                          sample_rate, scale, use_rotation, acceptance_rate);
+
+    auto desc = img_descs.front();
+    auto tags = desc.getTags();
+    std::cout << "#TAGS: " << tags.size() << std::endl;
+    QTime time;
+    time.start();
+    gen.process(desc, data);
+    std::cout << "Time to generate data images: " << time.restart() <<  "ms" << std::endl;
+    Image img(desc);
+    cv::Mat color_img;
+    // QPainter requires colored images
+    cv::cvtColor(img.getCvMat(), color_img, CV_GRAY2BGR);
+    QImage qimage = cvMatToQImage(color_img);
+    QPainter painter(&qimage);
+    ASSERT(painter.isActive(), "Expected painter to be active");
+    for(const auto & d : data) {
+        d.draw(painter);
+    }
+    painter.end();
+    qimage.save("show_sampling.png");
+
+    std::cout << "Saved image to show_sampling.png" << std::endl;
     return 0;
 }
 
@@ -71,7 +110,6 @@ void printUsage() {
 
 int main(int argc, char* argv[])
 {
-    QCoreApplication qapp(argc, argv);
     deeplocalizer::registerQMetaTypes();
     setupOptions();
     po::variables_map vm;
@@ -96,9 +134,17 @@ int main(int argc, char* argv[])
         double scale = vm.at("scale").as<double>();
         bool use_rotation = vm.at("use-rotation").as<bool>();
         double acceptance_rate = vm.at("acceptance-rate").as<double>();
+        bool show = vm.at("show").as<bool>();
         try {
-            return run(qapp, pathfile, opt_format.get(), output_dir, sample_rate,
-                       scale, use_rotation, acceptance_rate);
+            const auto img_descs = ImageDesc::fromPathFile(pathfile, ManuallyTagger::IMAGE_DESC_EXT);
+            if (show) {
+                QGuiApplication qapp(argc, argv);
+                run_show(qapp, img_descs, sample_rate, scale, use_rotation, acceptance_rate);
+
+            } else {
+                return run(img_descs, opt_format.get(), output_dir, sample_rate,
+                           scale, use_rotation, acceptance_rate);
+            }
         } catch(const std::exception & e) {
             std::cerr << "An Exception occurred: " << e.what() << std::endl;
             return 1;
