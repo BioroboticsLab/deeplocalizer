@@ -100,7 +100,6 @@ std::vector<ImageDesc> ImageDesc::fromPaths(const std::vector<std::string> paths
         ASSERT(io::exists(path), "File " << path << " does not exists.");
         auto desc = ImageDesc(path);
         desc.setSavePathExtension(image_desc_extension);
-        std::cout << desc.savePath() << " exists: " <<  io::exists(desc.savePath()) << std::endl;
         if(io::exists(desc.savePath())) {
             desc = *ImageDesc::load(desc.savePath());
             desc.filename = path;
