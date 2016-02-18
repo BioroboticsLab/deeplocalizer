@@ -80,6 +80,7 @@ include_directories(
     SYSTEM ${OpenCV_INCLUDE_DIRS}
     SYSTEM ${Qt5OpenGL_INCLUDE_DIRS}
     SYSTEM ${CUDA_INCLUDE_DIRS}
+    SYSTEM ${Boost_INCLUDE_DIR}
 )
 
 set(libs
