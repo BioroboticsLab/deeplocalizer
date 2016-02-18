@@ -1,6 +1,6 @@
 file(GLOB_RECURSE src RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.cpp)
 list(REMOVE_ITEM src "tagger.cpp" "add_border.cpp" "generate_proposals.cpp"
-                     "generate_dataset.cpp" "caffe_stats.cpp")
+                     "generate_dataset.cpp" "caffe_stats.cpp" "gt_to_json.cpp")
 file(GLOB hdr ${PROJECT_SOURCE_DIR}/include/deeplocalizer/tagger/*.h)
 file(GLOB_RECURSE ui RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.ui)
 file(GLOB_RECURSE qrc RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.qrc)
@@ -29,8 +29,12 @@ add_executable(generate_proposals "generate_proposals.cpp"
 
 target_link_libraries(generate_proposals deeplocalizer-tagger)
 
-
 add_executable(generate_dataset "generate_dataset.cpp"
      ${hdr} ${UI_RESOURCES} ${UI_HEADERS})
 target_link_libraries(generate_dataset deeplocalizer-tagger)
+
+
+add_executable(gt_to_json "gt_to_json.cpp"
+        ${hdr} ${UI_RESOURCES} ${UI_HEADERS})
+target_link_libraries(gt_to_json deeplocalizer-tagger)
 
