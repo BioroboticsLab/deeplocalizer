@@ -54,6 +54,9 @@ inline void printProgress(const std::chrono::time_point<Clock> & start_time,
     using std::cout;
     int width = 40;
     auto elapsed = Clock::now() - start_time;
+    if (progress <= 1e-5 || duration_cast<milliseconds>(elapsed).count() <= 100) {
+        return;
+    }
     unsigned long progress_chars = std::lround(width * progress);
     auto crosses = std::string(progress_chars, '#');
     auto spaces = std::string(width - progress_chars, ' ');
