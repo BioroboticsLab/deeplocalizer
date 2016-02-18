@@ -11,7 +11,7 @@
 #include <boost/archive/archive_exception.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/archive/binary_oarchive.hpp>
-
+#include <json.hpp>
 
 #ifndef NDEBUG
 #   define ASSERT(condition, message) \
@@ -39,17 +39,11 @@
 namespace deeplocalizer {
 
 template<typename T>
-void safe_serialization(const std::string &path, const boost::serialization::nvp<T> &nvp) {
+void safe_serialization(const std::string &path, const T && json) {
     boost::filesystem::path save_path{path};
-    boost::filesystem::path tmp_path = boost::filesystem::unique_path(save_path.parent_path() / "%%%%%%%%%.binary");
-    try {
-        std::ofstream os(tmp_path.string());
-        boost::archive::binary_oarchive archive(os);
-        archive << nvp;
-    } catch(boost::archive::archive_exception e) {
-        std::cerr << "Could not serialize file " << path;
-        throw;
-    }
+    boost::filesystem::path tmp_path = boost::filesystem::unique_path(save_path.parent_path() / "%%%%%%%%%.json");
+    std::ofstream os(tmp_path.string());
+    os << json.dump(2);
     boost::filesystem::rename(tmp_path, save_path);
 }
 

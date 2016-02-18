@@ -47,6 +47,7 @@ TEST_CASE( "TrainsetGenerator", "" ) {
             TrainsetGenerator gen;
             std::vector<TrainDatum> data;
             auto tags = cam2_desc.getTags();
+            std::cout << "#TAGS: " << tags.size() << std::endl;
             QTime time;
             time.start();
             gen.process(cam2_desc, data);

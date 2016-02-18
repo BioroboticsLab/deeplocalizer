@@ -4,14 +4,12 @@
 #include <thread>
 #include "utils.h"
 
-#include "serialization.h"
-
 namespace deeplocalizer {
 
 
 namespace io = boost::filesystem;
 
-const std::string ProposalGenerator::IMAGE_DESC_EXT = "proposal.desc";
+const std::string ProposalGenerator::IMAGE_DESC_EXT = "proposal.json";
 
 ProposalGenerator::ProposalGenerator() {
 }

@@ -6,7 +6,6 @@
 #include <boost/archive/xml_iarchive.hpp>
 
 #include <pipeline/Localizer.h>
-#include "serialization.h"
 #include "utils.h"
 #include "qt_helper.h"
 #include "ProposalGenerator.h"
@@ -18,8 +17,8 @@ using boost::optional;
 namespace io = boost::filesystem;
 
 
-const std::string ManuallyTagger::IMAGE_DESC_EXT = "tagger.desc";
-const std::string ManuallyTagger::DEFAULT_SAVE_PATH = "tagger_progress.binary";
+const std::string ManuallyTagger::IMAGE_DESC_EXT = "tagger.json";
+const std::string ManuallyTagger::DEFAULT_SAVE_PATH = "tagger_progress.json";
 
 
 ManuallyTagger::ManuallyTagger() {
@@ -55,7 +54,7 @@ ManuallyTagger::ManuallyTagger(std::vector<ImageDescPtr> && descriptions,
 }
 
 void ManuallyTagger::init() {
-    if(_loaded_from_boost_serialization) {
+    if(_loaded_from_serialization) {
         _image_descs = ImageDesc::fromPathsPtr(_image_paths, IMAGE_DESC_EXT);
     }
     _image_paths.clear();
@@ -101,17 +100,18 @@ void ManuallyTagger::save(bool all_descs) const {
 
 }
 void ManuallyTagger::save(const std::string & path) const {
-    safe_serialization(path, boost::serialization::make_nvp("tagger", *this));
+    safe_serialization(path, this->to_json());
 }
 
 std::unique_ptr<ManuallyTagger> ManuallyTagger::load(const std::string & path) {
     std::ifstream is(path);
-    boost::archive::binary_iarchive archive(is);
-    ManuallyTagger * tagger = new ManuallyTagger();
-    archive >> boost::serialization::make_nvp("tagger", *tagger);
-    tagger->_loaded_from_boost_serialization = true;
+    nlohmann::json j;
+    is >> j;
+    auto tagger = ManuallyTagger::from_json(j);
+    tagger->_loaded_from_serialization = true;
     tagger->init();
-    return std::unique_ptr<ManuallyTagger>(tagger);
+    return tagger;
+
 }
 void ManuallyTagger::loadNextImage() {
     loadImage(_image_idx + 1);
@@ -153,5 +153,30 @@ void ManuallyTagger::doneTagging(unsigned long idx) {
     _done_tagging.at(idx) = true;
     _n_done++;
     emit progress(static_cast<double>(_n_done)/_image_descs.size());
+}
+
+nlohmann::json ManuallyTagger::to_json() const {
+    nlohmann::json j;
+    j["image_idx"] = _image_idx;
+    j["done_tagging"] = _done_tagging;
+    j["image_paths"] =  _image_paths;
+    return j;
+}
+
+
+std::unique_ptr<ManuallyTagger> ManuallyTagger::from_json(const nlohmann::json &json) {
+    auto tagger = std::make_unique<ManuallyTagger>();
+    tagger->_image_idx = json["image_idx"];
+    std::vector<bool> done_tagging;
+    for(auto done : json["done_tagging"]) {
+        done_tagging.push_back(done);
+    }
+    tagger->_done_tagging = done_tagging;
+    std::vector<std::string> image_paths;
+    for(auto path : json["image_paths"]) {
+        image_paths.push_back(path);
+    }
+    tagger->_image_paths  = image_paths;
+    return tagger;
 }
 }

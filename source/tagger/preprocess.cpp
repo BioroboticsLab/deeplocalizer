@@ -324,7 +324,7 @@ int main(int argc, char* argv[])
             compression = vm.at("compression").as<int>();
         } else if (format == ImageFormat::JPEG){
             compression = DEFAULT_JPEG_COMPRESSION;
-        } else if (format == ImageFormat::PNG) {
+        } else /* (format == ImageFormat::PNG) */ {
             compression = DEFAULT_PNG_COMPRESSION;
         }
         if (use_binary_image) {

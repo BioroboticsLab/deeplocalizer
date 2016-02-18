@@ -7,7 +7,6 @@
 
 #include "Image.h"
 #include "PipelineWorker.h"
-#include "serialization.h"
 
 namespace deeplocalizer {
 

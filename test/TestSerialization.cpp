@@ -3,8 +3,6 @@
 #include <QCoreApplication>
 #include <boost/format.hpp>
 #include <boost/filesystem.hpp>
-#include <boost/archive/xml_oarchive.hpp>
-#include <boost/archive/xml_iarchive.hpp>
 
 #include <catch.hpp>
 #include <json.hpp>
@@ -16,36 +14,9 @@
 
 namespace io = boost::filesystem;
 using boost::optional;
-using boost::serialization::make_nvp;
 using namespace deeplocalizer;
 using json = nlohmann::json;
-TEST_CASE( "Serialization", "[serialize]" ) {
-    ImageDesc img("image_path.jpeg");
-    Tag tag(cv::Rect(30, 40, TAG_WIDTH, TAG_HEIGHT), optional<pipeline::Ellipse>());
-    auto uniquePath = io::unique_path("/tmp/%%%%%%%%%%%.xml");
-    SECTION( "Tag" ) {
-        INFO(uniquePath.string());
-        GIVEN( "a tag" ) {
-            THEN("it can be serialized and deserialized") {
-                {
-                    std::ofstream os{uniquePath.string()};
-                    REQUIRE(os.good());
-                    boost::archive::xml_oarchive oa(os);
-                    oa << BOOST_SERIALIZATION_NVP(tag);
-                }
-                {
-                    std::ifstream is{uniquePath.string()};
-                    Tag loaded_tag;
-                    REQUIRE(is.good());
-                    boost::archive::xml_iarchive ia(is);
-                    ia >> make_nvp("tag", loaded_tag);
-                    REQUIRE(loaded_tag == tag);
-                }
-            }
-        }
-        io::remove(uniquePath);
-    }
-}
+
 TEST_CASE( "JSON serialization", "[serialize]" ) {
     ImageDesc img("image_path.jpeg");
     Tag tag(cv::Rect(30, 40, TAG_WIDTH, TAG_HEIGHT), optional<pipeline::Ellipse>());

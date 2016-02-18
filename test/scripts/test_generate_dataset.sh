@@ -6,8 +6,9 @@ set -o xtrace
 TEST_PATHFILE="test_pathfile.txt"
 TRAIN_PATHFILE="train_pathfile.txt"
 
-TEST_IMG=$(realpath "../testdata/Cam_2_20140805145841_2_wb.jpeg")
-IMG_TAGGER_DESC=$(realpath "../testdata/Cam_2_20140805145841_2_wb.jpeg.tagger.desc")
+IMG="Cam_2_20150828143300_888543_wb.jpeg"
+TEST_IMG=$(realpath "../testdata/$IMG")
+IMG_TAGGER_DESC=$(realpath "../testdata/$IMG.tagger.json")
 
 DATA_DIR="$(mktemp -d)/test"
 echo "Does $TEST_IMG exists?"

@@ -4,17 +4,11 @@
 
 #include <boost/filesystem.hpp>
 #include <boost/optional.hpp>
-#include <boost/archive/binary_oarchive.hpp>
-#include <boost/archive/binary_iarchive.hpp>
-#include <boost/serialization/nvp.hpp>
-#include <boost/serialization/deque.hpp>
-#include "serialization.h"
 
 #include "Image.h"
 #include "Tag.h"
 #include "utils.h"
 #include "qt_helper.h"
-#include <json.hpp>
 
 namespace deeplocalizer {
 
@@ -106,6 +100,7 @@ std::vector<ImageDesc> ImageDesc::fromPaths(const std::vector<std::string> paths
         ASSERT(io::exists(path), "File " << path << " does not exists.");
         auto desc = ImageDesc(path);
         desc.setSavePathExtension(image_desc_extension);
+        std::cout << desc.savePath() << " exists: " <<  io::exists(desc.savePath()) << std::endl;
         if(io::exists(desc.savePath())) {
             desc = *ImageDesc::load(desc.savePath());
             desc.filename = path;
@@ -128,15 +123,14 @@ void ImageDesc::save() {
     save(savePath());
 }
 void ImageDesc::save(const std::string & path) {
-    safe_serialization(path, boost::serialization::make_nvp("image_desc", *this));
+    safe_serialization(path, this->to_json());
 }
 
 ImageDescPtr ImageDesc::load(const std::string & path) {
     std::ifstream is(path);
-    boost::archive::binary_iarchive archive(is);
-    ImageDesc img_desc;
-    archive >> boost::serialization::make_nvp("image_desc", img_desc);
-    return std::make_shared<ImageDesc>(std::move(img_desc));
+    nlohmann::json json_desc;
+    is >>  json_desc;
+    return std::make_shared<ImageDesc>(ImageDesc::from_json(json_desc));
 }
 
 Image::Image() {

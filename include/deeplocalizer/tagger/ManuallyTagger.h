@@ -7,13 +7,10 @@
 #include <memory>
 
 #include <boost/version.hpp>
-#include <boost/serialization/type_info_implementation.hpp>
-#include <boost/archive/basic_archive.hpp>
 #include <boost/optional/optional.hpp>
-#include <boost/serialization/deque.hpp>
-#include <boost/serialization/shared_ptr.hpp>
 
 #include <opencv2/core/core.hpp>
+#include <json.hpp>
 
 #include <QString>
 #include <QObject>
@@ -25,7 +22,6 @@
 
 #include "Tag.h"
 #include "Image.h"
-#include "serialization.h"
 
 
 namespace deeplocalizer {
@@ -88,26 +84,20 @@ public:
     unsigned long getIdx() const {
         return _image_idx;
     }
+    nlohmann::json to_json() const;
+    static std::unique_ptr<ManuallyTagger> from_json(const nlohmann::json &);
+
 private:
     std::vector<ImageDescPtr> _image_descs;
     std::vector<bool> _done_tagging;
     unsigned long _n_done = 0;
-    bool _loaded_from_boost_serialization = false;
+    bool _loaded_from_serialization = false;
     std::vector<std::string> _image_paths;
 
     std::string _save_path = DEFAULT_SAVE_PATH;
     ImagePtr _image;
     ImageDescPtr _desc;
     unsigned long _image_idx = 0;
-
-    friend class boost::serialization::access;
-    template <class Archive>
-    void serialize( Archive & ar, const unsigned int)
-    {
-        ar & BOOST_SERIALIZATION_NVP(_image_idx);
-        ar & BOOST_SERIALIZATION_NVP(_done_tagging);
-        ar & BOOST_SERIALIZATION_NVP(_image_paths);
-    }
 };
 }
 

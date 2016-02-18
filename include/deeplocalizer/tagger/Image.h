@@ -2,11 +2,9 @@
 #define DEEP_LOCALIZER_IMAGE_H
 
 #include <boost/optional.hpp>
-#include <boost/serialization/list.hpp>
 #include <boost/filesystem.hpp>
 
 #include "Tag.h"
-#include "serialization.h"
 #include <json.hpp>
 
 class QPixmap;
@@ -29,12 +27,12 @@ public:
     bool operator==(const ImageDesc & other) const;
     void save();
     void save(const std::string &path);
+    static std::shared_ptr<ImageDesc> load(const std::string &path);
     nlohmann::json to_json() const;
     static ImageDesc from_json(const nlohmann::json &);
 
     void setSavePathExtension(std::string ext);
     std::string savePath() const;
-    static std::shared_ptr<ImageDesc> load(const std::string &path);
 
     static std::vector<ImageDesc> fromPathFile(const std::string &path,
                                                const std::string & image_desc_extension = "desc");
@@ -50,14 +48,6 @@ private:
     std::string _save_extension = ".desc";
     std::vector<Tag> tags;
     unsigned long current_tag = 0;
-
-    friend class boost::serialization::access;
-    template <class Archive>
-    void serialize( Archive & ar, const unsigned int)
-    {
-      ar & BOOST_SERIALIZATION_NVP(filename);
-      ar & BOOST_SERIALIZATION_NVP(tags);
-    }
 };
 using ImageDescPtr = std::shared_ptr<ImageDesc>;
 
