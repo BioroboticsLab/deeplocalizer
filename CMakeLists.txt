@@ -39,6 +39,10 @@ else()
         SOURCE_DIR "${CMAKECONFIG_PATH}")
 endif()
 
+CPM_AddModule("cpm_nlohmann_json"
+    GIT_REPOSITORY "https://github.com/berleon/cpm_nlohmann_json.git"
+)
+
 # uncomment to generate proposals
 # see issue #3
 set(USE_DEEPLOCALIZER OFF)

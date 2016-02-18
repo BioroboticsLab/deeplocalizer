@@ -8,6 +8,7 @@
 #include <QString>
 
 #include <opencv2/core/core.hpp>
+#include <json.hpp>
 
 #include "pipeline/datastructure/Tag.h"
 #include "pipeline/datastructure/Ellipse.h"
@@ -73,6 +74,9 @@ public:
     void draw(QPainter & p, int lineWidth = 3) const;
     void drawEllipse(QPainter & p, int lineWidth = 3,
                           bool drawVote = true) const;
+
+    nlohmann::json to_json() const;
+    static Tag from_json(const nlohmann::json &);
 
 private:
     unsigned long _id;

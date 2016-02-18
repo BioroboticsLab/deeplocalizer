@@ -111,17 +111,19 @@ void Tag::toggleIsTag() {
 }
 
 bool Tag::operator==(const Tag &other) const {
+    bool ellipse_match = true;
     if (_ellipse.is_initialized() && other._ellipse.is_initialized()) {
         auto te = _ellipse.get();
         auto oe = other._ellipse.get();
-        return (_boundingBox == other._boundingBox &&
-                _tag_type == other._tag_type &&
-                te.getAngle() == oe.getAngle() &&
-                te.getVote() == oe.getVote() &&
-                te.getAxis() == oe.getAxis() &&
-                te.getCen() == oe.getCen());
+        ellipse_match =  te.getAngle() == oe.getAngle()
+                         && te.getVote() == oe.getVote()
+                         && te.getAxis() == oe.getAxis()
+                         && te.getCen() == oe.getCen();
     }
-    return _ellipse.is_initialized() == other._ellipse.is_initialized();
+    return _ellipse.is_initialized() == other._ellipse.is_initialized() &&
+            ellipse_match &&
+            _boundingBox == other._boundingBox &&
+            _tag_type == other._tag_type;
 }
 
 
@@ -173,6 +175,73 @@ unsigned long Tag::id() const {
 }
 void Tag::setId(unsigned long id) {
     _id = id;
+}
+
+using json = nlohmann::json;
+
+std::string tagtype_to_string(TagType tagType) {
+    switch (tagType) {
+        case TagType::NoTag:
+            return "notag";
+        case TagType::BeeWithoutTag:
+            return "bee_without_tag";
+        case TagType::Exclude:
+            return "exclude";
+        case TagType::IsTag:
+            return "istag";
+        default:
+            throw "unknown tag type";
+    }
+}
+
+TagType tagtype_from_string(const std::string & str) {
+    if (str == "notag") {
+        return TagType::NoTag;
+    } else if (str == "bee_without_tag") {
+        return TagType::BeeWithoutTag;
+    } else if (str == "exclude") {
+        return TagType::Exclude;
+    } else if (str == "istag") {
+        return TagType::IsTag;
+    } else {
+        throw "unknown tag type";
+    }
+}
+
+json Tag::to_json() const {
+    json jtag;
+    jtag["x"] = this->center().x;
+    jtag["y"] = this->center().y;
+    jtag["tagtype"] = tagtype_to_string(_tag_type);
+    if (_ellipse) {
+        const pipeline::Ellipse & ellipse = _ellipse.get();
+        jtag["ellipse"] = {
+                {"vote", ellipse.getVote()},
+                {"center_x", ellipse.getCen().x},
+                {"center_y", ellipse.getCen().y},
+                {"axis_width", ellipse.getAxis().width},
+                {"axis_height", ellipse.getAxis().height},
+                {"angle", ellipse.getAngle()},
+        };
+    }
+    return jtag;
+}
+
+Tag Tag::from_json(const json &j) {
+    cv::Point2i center(j["x"], j["y"]);
+
+    cv::Rect boundingBox(center.x - TAG_WIDTH/2, center.y - TAG_WIDTH/2,
+                           TAG_WIDTH, TAG_HEIGHT);
+    boost::optional<pipeline::Ellipse> ellipse;
+    if (j.count("ellipse")) {
+        const json &  e = j["ellipse"];
+        ellipse = boost::optional<pipeline::Ellipse>(pipeline::Ellipse(
+                e["vote"], cv::Point2i(e["center_x"], e["center_y"]),
+                cv::Size(e["axis_width"], e["axis_height"]), e["angle"], TAG_SIZE));
+    }
+    Tag tag(boundingBox, ellipse);
+    tag.setType(tagtype_from_string(j["tagtype"]));
+    return tag;
 }
 }
 

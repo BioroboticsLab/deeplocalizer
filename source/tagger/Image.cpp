@@ -14,6 +14,7 @@
 #include "Tag.h"
 #include "utils.h"
 #include "qt_helper.h"
+#include <json.hpp>
 
 namespace deeplocalizer {
 
@@ -46,8 +47,13 @@ QPixmap ImageDesc::visualise_tags() {
 }
 
 void ImageDesc::addTag(Tag && tag) {
-    this->tags.push_back(tag);
+    this->tags.emplace_back(tag);
 }
+
+void ImageDesc::addTag(Tag tag) {
+    this->tags.emplace_back(std::move(tag));
+}
+
 
 void ImageDesc::setTags(std::vector<Tag> && tags) {
     this->tags = tags;
@@ -172,6 +178,25 @@ bool Image::operator==(const Image &other) const {
         return false;
     }
     return std::equal(m.begin<uchar>(), m.end<uchar>(), o.begin<uchar>(), o.end<uchar>());
+}
+
+using json = nlohmann::json;
+json ImageDesc::to_json() const {
+    json j;
+    j["filename"] = this->filename;
+    j["tags"] = json::array();
+    for(const auto & tag : this->tags) {
+        j["tags"].push_back(tag.to_json());
+    }
+    return j;
+}
+
+ImageDesc ImageDesc::from_json(const json &j) {
+    std::vector<Tag> tags;
+    for(const auto & jtag : j["tags"]) {
+        tags.push_back(Tag::from_json((jtag)));
+    }
+    return ImageDesc(j["filename"], tags);
 }
 
 }
