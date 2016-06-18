@@ -6,6 +6,7 @@
 #include <fstream>
 #include <chrono>
 #include <sstream>
+#include <random>
 
 #include <boost/serialization/nvp.hpp>
 #include <boost/archive/archive_exception.hpp>

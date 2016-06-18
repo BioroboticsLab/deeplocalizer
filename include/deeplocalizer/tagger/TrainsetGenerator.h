@@ -4,6 +4,7 @@
 
 #include <boost/filesystem.hpp>
 #include <QObject>
+#include <random>
 
 #include "Image.h"
 #include "TrainDatum.h"

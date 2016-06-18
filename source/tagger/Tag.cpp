@@ -54,11 +54,11 @@ Tag::Tag(const pipeline::Tag & pipetag) :  _id(Tag::generateId()) {
         }
     }
     if(ellipse) {
-        _boundingBox = centerBoxAtEllipse(pipetag.getBox(), ellipse.get());
+        _boundingBox = centerBoxAtEllipse(pipetag.getRoi(), ellipse.get());
         _ellipse = ellipse;
         _ellipse.get().setCen(cv::Point2i(TAG_WIDTH/2, TAG_HEIGHT/2));
     } else {
-        _boundingBox = centerBox(pipetag.getBox());
+        _boundingBox = centerBox(pipetag.getRoi());
         _tag_type = TagType::NoTag;
     }
 }

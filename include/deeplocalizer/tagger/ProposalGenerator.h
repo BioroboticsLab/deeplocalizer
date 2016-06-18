@@ -2,6 +2,7 @@
 #define DEEP_LOCALIZER_PROPOSALGENERATOR_H
 
 #include <memory>
+#include <random>
 #include <QObject>
 #include <QThread>
 

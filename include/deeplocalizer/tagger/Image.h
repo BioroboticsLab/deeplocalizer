@@ -3,6 +3,7 @@
 
 #include <boost/optional.hpp>
 #include <boost/filesystem.hpp>
+#include <random>
 
 #include "Tag.h"
 #include <json.hpp>

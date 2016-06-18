@@ -52,7 +52,7 @@ set(BUILD_SHARED_LIBS ON)
 # set(BUILD_python OFF)
 # set(BUILD_python_layer OFF)
 
-include_pipeline()
+include_pipeline("3a75dfa3c19e7db42950749f9c2492c676d8e6a9")
 
 CPM_Finish()
 

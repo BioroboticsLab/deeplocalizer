@@ -6,6 +6,7 @@
 #include <QWidget>
 #include <QScrollArea>
 #include <QPainter>
+#include <set>
 
 #include <opencv2/core/core.hpp>
 #include <boost/optional/optional.hpp>

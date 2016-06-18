@@ -2,6 +2,7 @@
 #ifndef DEEP_LOCALIZER_TRAINDATA_H
 #define DEEP_LOCALIZER_TRAINDATA_H
 
+#include <random>
 #include "Tag.h"
 #include "Image.h"
 #include "deeplocalizer_tagger.h"

@@ -17,14 +17,14 @@ cd ../../source/tagger
 echo $TEST_IMG > $TEST_PATHFILE
 echo "Given a file of image path"
 
-./preprocess -o $TMP_DIR --output-pathfile $OUTPUT_PATHFILE $TEST_PATHFILE
-echo "Then ./preprocess will add a border to the image"
+./bb_preprocess -o $TMP_DIR --output-pathfile $OUTPUT_PATHFILE $TEST_PATHFILE
+echo "Then ./bb_preprocess will add a border to the image"
 if [ ! -e "$WITH_BORDER" ]; then
     echo "WITH_BORDER does not exists: $WITH_BORDER"
     false
 fi
 
-echo "Then ./preprocess will create an output pathfile"
+echo "Then ./bb_preprocess will create an output pathfile"
 
 if [ ! -e "$TMP_DIR/$OUTPUT_PATHFILE" ]; then
     echo "OUTPUT_PATHFILE does not exists: $TMP_DIR/$OUTPUT_PATHFILE"

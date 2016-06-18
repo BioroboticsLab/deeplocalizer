@@ -5,6 +5,7 @@
 #include <string>
 #include <deque>
 #include <memory>
+#include <random>
 
 #include <boost/version.hpp>
 #include <boost/optional/optional.hpp>

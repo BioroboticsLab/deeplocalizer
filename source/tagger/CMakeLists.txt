@@ -21,8 +21,12 @@ add_executable(tagger "tagger.cpp"
 
 target_link_libraries(tagger deeplocalizer-tagger)
 
-add_executable(preprocess "preprocess.cpp" ${hdr} ${UI_RESOURCES} ${UI_HEADERS})
-target_link_libraries(preprocess deeplocalizer-tagger)
+add_executable(bb_preprocess "preprocess.cpp" ${hdr} ${UI_RESOURCES} ${UI_HEADERS})
+target_link_libraries(bb_preprocess deeplocalizer-tagger)
+
+install (TARGETS bb_preprocess  deeplocalizer-tagger
+        RUNTIME DESTINATION bin
+        LIBRARY DESTINATION lib)
 
 add_executable(generate_proposals "generate_proposals.cpp"
      ${hdr} ${UI_RESOURCES} ${UI_HEADERS})

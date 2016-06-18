@@ -3,6 +3,7 @@
 #define DEEP_LOCALIZER_TAG_H
 
 #include <atomic>
+#include <random>
 
 #include <QMetaType>
 #include <QString>

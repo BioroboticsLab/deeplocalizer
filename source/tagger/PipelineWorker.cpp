@@ -141,9 +141,9 @@ void PipelineWorker::setupPipeline()
 
 std::vector<Tag> PipelineWorker::tagsProposals(ImageDesc & img_descr) {
     Image img{img_descr};
-    cv::Mat preprocced = _preprocessor->process(img.getCvMat());
+    auto preprocced = _preprocessor->process(img.getCvMat());
     std::vector<pipeline::Tag> localizer_tags =
-            _localizer->process(std::move(img.getCvMat()), std::move(preprocced));
+            _localizer->process(std::move(preprocced));
     const std::vector<pipeline::Tag> pipeline_tags =
             _ellipseFitter->process(std::move(localizer_tags));
     std::vector<Tag> tags;
