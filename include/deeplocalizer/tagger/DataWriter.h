@@ -5,7 +5,6 @@
 #include <memory>
 #include <boost/filesystem.hpp>
 #include <mutex>
-#include <lmdb.h>
 #include <hdf5.h>
 #include <hdf5_hl.h>
 

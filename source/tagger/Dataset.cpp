@@ -1,6 +1,5 @@
 #include "Dataset.h"
 
-#include <lmdb.h>
 #include <iomanip>
 #include "utils.h"
 
