@@ -2,9 +2,9 @@
 #define CATCH_CONFIG_RUNNER
 
 #include <boost/filesystem.hpp>
-#include <qt/QtGui/QGuiApplication>
-#include <qt/QtGui/QPainter>
-#include <qt/QtCore/QTime>
+#include <QtGui/QGuiApplication>
+#include <QtGui/QPainter>
+#include <QtCore/QTime>
 
 #include "ManuallyTagger.h"
 #include <catch.hpp>

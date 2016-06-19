@@ -57,7 +57,7 @@ private:
     std::set<unsigned long> _deleted_Ids;
     PipelineWorker _pipeline_worker;
 
-    boost::optional<Tag &> getTag(int x, int y);
+    boost::optional<Tag> getTag(int x, int y);
     void findEllipse(Tag &&tag);
 
     template<typename T>

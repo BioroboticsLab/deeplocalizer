@@ -127,8 +127,8 @@ void WholeImageWidget::zoomInRelToMouse(QPoint mouse_pos) {
     QSize max_viewport(_pixmap.size() - viewport);
     QPointF scroll_ratio(horz->value() / double(horz->maximum() - horz->minimum()),
                          vert->value() / double(vert->maximum() - vert->minimum()));
-    if (isnan(scroll_ratio.x()))  scroll_ratio.setX(0);
-    if (isnan(scroll_ratio.y())) scroll_ratio.setY(0);
+    if (std::isnan(scroll_ratio.x()))  scroll_ratio.setX(0);
+    if (std::isnan(scroll_ratio.y())) scroll_ratio.setY(0);
     QPointF viewport_origin{
             scroll_ratio.x()*max_viewport.width(),
             scroll_ratio.y()*max_viewport.height()
@@ -156,7 +156,7 @@ void WholeImageWidget::wheelEvent(QWheelEvent * event) {
 
 void WholeImageWidget::mousePressEvent(QMouseEvent * event) {
     auto pos = event->pos() / _scale;
-    auto opt_tag = getTag(pos.x(), pos.y());
+    boost::optional<Tag> opt_tag = getTag(pos.x(), pos.y());
     if (opt_tag) {
         eraseTag(opt_tag.get().id(), *_tags);
         eraseTag(opt_tag.get().id(), _newly_added_tags);
@@ -181,17 +181,17 @@ void WholeImageWidget::mousePressEvent(QMouseEvent * event) {
     repaint();
 }
 
-boost::optional<Tag &> WholeImageWidget::getTag(int x, int y) {
+boost::optional<Tag> WholeImageWidget::getTag(int x, int y) {
     auto getTagIfContainsPoint = [x, y](auto & tags) {
         cv::Point point(x, y);
         for(auto & tag : tags) {
             if(tag.getBoundingBox().contains(point)) {
-                return optional<Tag &>(tag);
+                return optional<Tag>(tag);
             }
         }
-        return optional<Tag &>();
+        return optional<Tag>();
     };
-    boost::optional<Tag &> tag = getTagIfContainsPoint(*_tags);
+    boost::optional<Tag> tag = getTagIfContainsPoint(*_tags);
     if (tag) {
         return tag;
     }
