@@ -68,16 +68,45 @@ struct PreprocessOptions {
         }
         return std::make_pair(f, compression);
     };
+
+    std::string extension() const {
+        std::vector<std::string> parts;
+        if (use_hist_eq) {
+            parts.push_back("clahe");
+        }
+        if (use_thresholding) {
+            parts.push_back("t");
+        }
+        if (add_border) {
+            parts.push_back("b");
+        }
+        if (parts.empty()) {
+            return "";
+        } else {
+            std::stringstream ss;
+            for(const auto & part : parts) {
+                ss << "." << part;
+            }
+            return ss.str();
+        }
+    }
+
+    void print() {
+        std::cout << "output-dir:       " << output_dir << std::endl;
+        std::cout << "use-hist-eq:      " << use_hist_eq << std::endl;
+        std::cout << "use-thresholding: " << use_thresholding << std::endl;
+        std::cout << "add-border:       " << add_border << std::endl;
+    }
 };
 
 // opencv default values
 static const int DEFAULT_JPEG_COMPRESSION = 95;
 static const int DEFAULT_PNG_COMPRESSION = 3;
 
-io::path addWb(io::path filename, ImageFormat format) {
+io::path add_extension(const io::path & filename, const PreprocessOptions & opt) {
     io::path output_path(filename);
     output_path.replace_extension();
-    output_path += std::string("_wb.") + format_to_str(format);
+    output_path += opt.extension() + std::string(".") + format_to_str(opt.format);
     return output_path;
 }
 
@@ -117,11 +146,17 @@ void adaptiveTresholding(cv::Mat & mat, bool use_binary_image) {
 }
 
 void localHistogramEq(cv::Mat & mat) {
+    std::cout << "CLAHE" << std::endl;
     static const int clip_limit = 2;
-    static const cv::Size tile_size(deeplocalizer::TAG_WIDTH, deeplocalizer::TAG_HEIGHT);
+    thread_local int i = 0;
+    static const cv::Size tile_size(deeplocalizer::TAG_WIDTH / 2, deeplocalizer::TAG_HEIGHT / 2);
     auto clahe = cv::createCLAHE(clip_limit, tile_size);
     cv::Mat image_clahe;
-    clahe->apply(mat, mat);
+    clahe->apply(mat, image_clahe);
+    mat = image_clahe;
+    //clahe->apply(mat, mat);
+    //cv::imwrite("out_clahe.jpeg", image_clahe);
+    //cv::imwrite("out_mat.jpeg", mat);
 }
 
 void makeBorder(cv::Mat & mat) {
@@ -157,7 +192,7 @@ void threadWorkerFn(const std::vector<ImageDesc> & image_descs,
         Image img(desc);
         processImage(img, opt);
         auto input_path =  io::path(desc.filename);
-        auto output = addWb(opt.output_dir / input_path.filename(), opt.format);
+        auto output = add_extension(opt.output_dir / input_path.filename(), opt);
         if(not img.write(output, opt.opencv_compression())) {
             std::lock_guard<std::mutex> look(cout_mutex);
             std::cerr << "Fail to write image : " << output.string() << std::endl;
@@ -327,9 +362,6 @@ int main(int argc, char* argv[])
         } else /* (format == ImageFormat::PNG) */ {
             compression = DEFAULT_PNG_COMPRESSION;
         }
-        if (use_binary_image) {
-            use_threshold = true;
-        }
         bool add_border = vm.at("border").as<bool>();
         PreprocessOptions opt {
                 output_dir,
@@ -341,6 +373,7 @@ int main(int argc, char* argv[])
                 compression,
                 benchmark
         };
+        opt.print();
         run(image_descs, output_pathfile, opt);
     } else {
         std::cout << "No pathfile or output_dir are given" << std::endl;
