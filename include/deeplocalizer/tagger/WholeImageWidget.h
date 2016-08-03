@@ -30,6 +30,10 @@ public:
     WholeImageWidget(QScrollArea * parent,
                      boost::optional<std::pair<cv::Mat, std::vector<Tag> *>> tags);
     void setTags(cv::Mat mat, std::vector<Tag> * tags);
+    void setZoomFactor(double factor);
+    inline double getZoomFactor() {
+        return _scale;
+    };
     virtual QSize sizeHint() const;
 public slots:
     boost::optional<Tag> createTag(int x, int y);

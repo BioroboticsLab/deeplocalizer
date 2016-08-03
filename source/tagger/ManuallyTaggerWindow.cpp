@@ -150,6 +150,12 @@ QStringList ManuallyTaggerWindow::fileStringList() {
     return list;
 }
 void ManuallyTaggerWindow::next() {
+    if (_whole_image->getZoomFactor() > 0.5) {
+        _whole_image->setZoomFactor(0.30);
+        return;
+    }
+
+    _whole_image->setZoomFactor(1.50);
     _tagger->doneTagging();
 
     _image_list_model->setStringList(fileStringList());

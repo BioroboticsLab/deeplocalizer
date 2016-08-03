@@ -28,6 +28,7 @@ WholeImageWidget::WholeImageWidget(QScrollArea * parent,
                                    opt_mattags_t opt_mattags)
     : QWidget(parent)  {
     _parent = parent;
+    this->setCursor(Qt::CrossCursor);
     this->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Ignored);
     this->resize(this->sizeHint());
     if(opt_mattags) {
@@ -88,8 +89,12 @@ void adjustScrollBarCenter(QScrollBar *scrollBar, double factor) {
 void WholeImageWidget::zoom(double factor) {
     if(_scale > 3 && factor > 1) return;
     if(_scale < 0.15 && factor < 1) return;
-    _scale *= factor;
+    setZoomFactor(_scale * factor);
 
+}
+void WholeImageWidget::setZoomFactor(double scale) {
+    auto factor = scale / _scale;
+    _scale = scale;
     resize(sizeHint());
     adjustScrollBarCenter(_parent->horizontalScrollBar(), factor);
     adjustScrollBarCenter(_parent->verticalScrollBar(), factor);
