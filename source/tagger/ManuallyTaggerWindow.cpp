@@ -39,7 +39,6 @@ void ManuallyTaggerWindow::init() {
     setupActions();
     setupConnections();
     setupUi();
-    _state = State::Tags;
     _tagger->loadCurrentImage();
 }
 
@@ -50,7 +49,6 @@ ManuallyTaggerWindow::~ManuallyTaggerWindow()
 }
 
 void ManuallyTaggerWindow::showImage() {
-    _state = State::Image;
     _whole_image->setTags(_image->getCvMat(), &_desc->getTags());
     ui->scrollArea->takeWidget();
     ui->scrollArea->setWidget(_whole_image);
@@ -58,53 +56,6 @@ void ManuallyTaggerWindow::showImage() {
     ui->scrollArea->show();
 }
 
-void ManuallyTaggerWindow::showTags() {
-    _state = State::Tags;
-    auto & tags = _desc->getTags();
-    if(tags.size() == 0) {
-        this->next();
-        return;
-    }
-    _tag_widgets.clear();
-    for (auto & tag : tags) {
-        auto mat = tag.getSubimage(_image->getCvMat(),
-                                   TagWidget::DEFAULT_BORDER);
-        TagWidgetPtr widget = std::make_shared<TagWidget>(this, tag, mat);
-        connect(widget.get(), &TagWidget::clicked, widget.get(), &TagWidget::toggleTag);
-        connect(widget.get(), &TagWidget::clicked, this, &ManuallyTaggerWindow::changed);
-        _tag_widgets.push_back(widget);
-    }
-    arangeTagWidgets();
-    if (ui->tags_container->layout() != _grid_layout) {
-        delete ui->tags_container->layout();
-        ui->tags_container->setLayout(_grid_layout);
-    }
-    // do not delete current widget in scrollArea
-    ui->scrollArea->takeWidget();
-    ui->scrollArea->setWidget(ui->tags_container);
-    _whole_image->hide();
-}
-
-void ManuallyTaggerWindow::arangeTagWidgets() {
-    int col = 0;
-    int row = 0;
-    int width = ui->scrollArea->geometry().width();
-    ASSERT(not _tag_widgets.empty(), "_tag_widgets is empty. Got " << _desc->getTags().size() << " Tags.");
-    int col_width = (_tag_widgets.front()->width() + _grid_layout->horizontalSpacing());
-    int cols = width / col_width;
-
-    for(auto & widget : _tag_widgets) {
-        if (col == cols) { col = 0; row++; }
-        _grid_layout->addWidget(widget.get(), row, col);
-        col++;
-    }
-}
-
-void ManuallyTaggerWindow::resizeEvent(QResizeEvent * ) {
-    if(_state == State::Tags) {
-        arangeTagWidgets();
-    }
-}
 
 void ManuallyTaggerWindow::setupActions() {
     ui->actionZoomIn->setShortcuts({QKeySequence::ZoomIn, Qt::SHIFT + Qt::Key_J});
@@ -199,24 +150,14 @@ QStringList ManuallyTaggerWindow::fileStringList() {
     return list;
 }
 void ManuallyTaggerWindow::next() {
-    if (_state == State::Image) {
-        _next_state = State::Tags;
-        _tagger->doneTagging();
-        _image_list_model->setStringList(fileStringList());
-        _tagger->loadNextImage();
-    } else if(_state == State::Tags) {
-        eraseNegativeTags();
-        showImage();
-    }
+    _tagger->doneTagging();
+
+    _image_list_model->setStringList(fileStringList());
+    _tagger->loadNextImage();
 }
 
 void ManuallyTaggerWindow::back() {
-    if (_state == State::Image) {
-        showTags();
-    } else if(_state == State::Tags) {
-        _next_state = State::Image;
-        _tagger->loadLastImage();
-    }
+    _tagger->loadLastImage();
 }
 
 void ManuallyTaggerWindow::scroll() {
@@ -288,11 +229,7 @@ void ManuallyTaggerWindow::setImage(unsigned long idx, ImageDescPtr desc,
     _image = img;
     updateStatusBar();
     ui->imagesListView->setCurrentIndex(_image_list_model->index(idx));
-    if (_next_state == State::Image) {
-        showImage();
-    } else {
-        showTags();
-    }
+    showImage();
 
 }
 
