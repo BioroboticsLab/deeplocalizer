@@ -45,7 +45,7 @@ CPM_AddModule("cpm_nlohmann_json"
 
 # uncomment to generate proposals
 # see issue #3
-set(USE_DEEPLOCALIZER OFF)
+# set(USE_DEEPLOCALIZER OFF)
 set(BUILD_SHARED_LIBS ON)
 
 # set(BLAS Open CACHE STRING "Use openblas")
@@ -57,6 +57,7 @@ include_pipeline("3a75dfa3c19e7db42950749f9c2492c676d8e6a9")
 CPM_Finish()
 
 biorobotics_config()
+set(CMAKE_CXX_STANDARD 14)
 
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/ ${CMAKE_MODULE_PATH})
 
