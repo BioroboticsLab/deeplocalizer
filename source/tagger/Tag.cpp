@@ -74,16 +74,24 @@ cv::Mat Tag::getSubimage(const cv::Mat & orginal, unsigned int border) const {
 
 void Tag::draw(QPainter & p, int lineWidth) const {
     auto bb = _boundingBox;
-    if (isTag()) {
-        p.setPen(QPen(Qt::green, lineWidth));
-    } else if (isNoTag()) {
-        p.setPen(QPen(Qt::red, lineWidth));
-    } else if (isExclude()) {
-        p.setPen(QPen(Qt::magenta, lineWidth));
-    } else if (isBeeWithoutTag()) {
-        p.setPen(QPen(Qt::cyan, lineWidth));
-    }
-    p.drawRect(QRect(bb.x, bb.y, bb.height, bb.width));
+    auto set_pen = [&](double width) {
+        if (isTag()) {
+            p.setPen(QPen(Qt::green, width));
+        } else if (isNoTag()) {
+            p.setPen(QPen(Qt::red, width));
+        } else if (isExclude()) {
+            p.setPen(QPen(Qt::magenta, width));
+        } else if (isBeeWithoutTag()) {
+            p.setPen(QPen(Qt::cyan, width));
+        }
+    };
+    set_pen(lineWidth);
+    p.drawArc(QRect(bb.x, bb.y, bb.height, bb.width), 0, 16*360);
+    auto c = center();
+    set_pen(1);
+    int o = 3;
+    p.drawLine(c.x - o, c.y - o, c.x + o, c.y + o);
+    p.drawLine(c.x - o, c.y + o, c.x + o, c.y - o);
 }
 
 unsigned long Tag::id() const {
