@@ -9,7 +9,6 @@
 #include <QThread>
 #include <QMouseEvent>
 #include <QtCore/qline.h>
-#include "PipelineWorker.h"
 #include "qt_helper.h"
 
 namespace deeplocalizer {
@@ -27,7 +26,7 @@ WholeImageWidget::WholeImageWidget(QScrollArea * parent, cv::Mat mat, std::vecto
 { }
 WholeImageWidget::WholeImageWidget(QScrollArea * parent,
                                    opt_mattags_t opt_mattags)
-    : QWidget(parent), _pipeline_worker() {
+    : QWidget(parent)  {
     _parent = parent;
     this->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Ignored);
     this->resize(this->sizeHint());
@@ -46,19 +45,9 @@ optional<Tag> WholeImageWidget::createTag(int x, int y) {
         return optional<Tag>();
     }
 
-    return Tag(cv::Rect(x - TAG_WIDTH / 2, y - TAG_HEIGHT / 2, TAG_WIDTH, TAG_HEIGHT),
-               optional<pipeline::Ellipse>());
+    return Tag(cv::Rect(x - TAG_WIDTH / 2, y - TAG_HEIGHT / 2, TAG_WIDTH, TAG_HEIGHT));
 }
 
-void WholeImageWidget::findEllipse(Tag &&tag) {
-    auto bb = tag.getBoundingBox();
-    auto callback_mem_fn = std::mem_fn(&WholeImageWidget::tagProcessed);
-    _pipeline_worker.findEllipse(tag.getSubimage(_mat), tag, [this](Tag tag) {
-        QMetaObject::invokeMethod(this, "tagProcessed", Qt::QueuedConnection,
-                                  Q_ARG(Tag, tag));
-    });
-    _newly_added_tags.emplace_back(std::move(tag));
-}
 void WholeImageWidget::tagProcessed(Tag tag) {
     if(tag.isTag() == TagType::NoTag) {
         tag.setType(TagType::IsTag);
@@ -79,11 +68,9 @@ void WholeImageWidget::paintEvent(QPaintEvent *) {
     _painter.drawPixmap(0, 0, _pixmap);
     for(auto & t: *_tags) {
         t.draw(_painter);
-        t.drawEllipse(_painter);
     }
     for(auto & t: _newly_added_tags) {
         t.draw(_painter);
-        t.drawEllipse(_painter);
     }
     _painter.end();
 }
@@ -170,12 +157,7 @@ void WholeImageWidget::mousePressEvent(QMouseEvent * event) {
         } else if (modifier.testFlag(Qt::AltModifier)) {
             tag.setType(TagType::BeeWithoutTag);
         }
-
-        if (modifier.testFlag(Qt::ShiftModifier) || not tag.isTag()) {
-            _tags->push_back(tag);
-        } else {
-            findEllipse(std::move(tag));
-        }
+        _tags->push_back(tag);
     }
     emit changed();
     repaint();

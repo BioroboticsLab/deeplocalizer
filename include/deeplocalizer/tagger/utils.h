@@ -1,6 +1,4 @@
-#ifndef DEEP_LOCALIZER_UTILS_H
-#define DEEP_LOCALIZER_UTILS_H
-
+#pragma  once
 
 #include <iostream>
 #include <fstream>
@@ -87,5 +85,18 @@ inline std::vector<unsigned long> shuffledIndecies(unsigned long n) {
     std::shuffle(indecies.begin(), indecies.end(), std::default_random_engine());
     return indecies;
 }
+
+inline std::vector<std::string>  parsePathfile(std::string path) {
+    const boost::filesystem::path pathfile(path);
+    ASSERT(boost::filesystem::exists(pathfile), "File " << pathfile << " does not exists.");
+    std::ifstream ifs{pathfile.string()};
+    std::string path_to_image;
+    std::vector<std::string> paths;
+    for(int i = 0; std::getline(ifs, path_to_image); i++) {
+        ASSERT(boost::filesystem::exists(path_to_image), "File " << path_to_image << " does not exists.");
+        paths.push_back(path_to_image);
+    }
+    return paths;
 }
-#endif //DEEP_LOCALIZER_UTILS_H
+
+}

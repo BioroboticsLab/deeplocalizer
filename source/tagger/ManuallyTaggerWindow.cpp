@@ -61,9 +61,10 @@ void ManuallyTaggerWindow::showImage() {
 void ManuallyTaggerWindow::showTags() {
     _state = State::Tags;
     auto & tags = _desc->getTags();
-    std::sort(tags.begin(), tags.end(), [](auto & t1, auto & t2) {
-        return t1.getEllipse() < t2.getEllipse();
-    });
+    if(tags.size() == 0) {
+        this->next();
+        return;
+    }
     _tag_widgets.clear();
     for (auto & tag : tags) {
         auto mat = tag.getSubimage(_image->getCvMat(),
@@ -88,8 +89,7 @@ void ManuallyTaggerWindow::arangeTagWidgets() {
     int col = 0;
     int row = 0;
     int width = ui->scrollArea->geometry().width();
-    ASSERT(not _tag_widgets.empty(),
-           "_tag_widgets is empty. Got " << _desc->getTags().size() << " Tags.");
+    ASSERT(not _tag_widgets.empty(), "_tag_widgets is empty. Got " << _desc->getTags().size() << " Tags.");
     int col_width = (_tag_widgets.front()->width() + _grid_layout->horizontalSpacing());
     int cols = width / col_width;
 

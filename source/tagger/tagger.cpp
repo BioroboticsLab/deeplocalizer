@@ -1,9 +1,10 @@
 
 #include "ManuallyTaggerWindow.h"
+#include "Image.h"
 #include "qt_helper.h"
 #include <QApplication>
+#include "utils.h"
 #include <boost/program_options.hpp>
-#include <ProposalGenerator.h>
 
 using namespace deeplocalizer;
 
@@ -26,9 +27,17 @@ int run(QApplication & qapp, std::string pathfile) {
         auto tagger = ManuallyTagger::load(ManuallyTagger::DEFAULT_SAVE_PATH);
         window = std::make_unique<ManuallyTaggerWindow>(std::move(tagger));
     } else {
-        auto proposals = ImageDesc::fromPathFilePtr(pathfile,
-                                                    ProposalGenerator::IMAGE_DESC_EXT);
-        window = std::make_unique<ManuallyTaggerWindow>(std::move(proposals));
+        const auto filenames = parsePathfile(pathfile);
+        std::vector<ImageDescPtr> img_desc;
+        for(const auto & fname : filenames) {
+            auto proposal_name = fname + ".proposal.json";
+            if (io::exists(proposal_name)) {
+                img_desc.push_back(ImageDesc::load(proposal_name));
+            } else {
+                img_desc.push_back(std::make_shared<ImageDesc>(fname));
+            }
+        }
+        window = std::make_unique<ManuallyTaggerWindow>(std::move(img_desc));
     }
     window->show();
     return qapp.exec();

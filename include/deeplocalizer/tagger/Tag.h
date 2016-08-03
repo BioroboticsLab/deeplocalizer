@@ -11,8 +11,6 @@
 #include <opencv2/core/core.hpp>
 #include <json.hpp>
 
-#include "pipeline/datastructure/Tag.h"
-#include "pipeline/datastructure/Ellipse.h"
 
 #include "deeplocalizer_tagger.h"
 
@@ -31,17 +29,13 @@ enum TagType {
 class Tag {
 public:
     Tag();
-    Tag(const pipeline::Tag & pipetag);
     Tag(cv::Rect boundingBox);
-    Tag(cv::Rect boundingBox, boost::optional<pipeline::Ellipse> ellipse);
     static const int IS_TAG_THRESHOLD = 1200;
 
     unsigned long id() const;
     void setId(unsigned long id);
     const cv::Rect & getBoundingBox() const;
     void setBoundingBox(cv::Rect boundingBox);
-
-    const boost::optional<pipeline::Ellipse> & getEllipse () const;
 
     TagType type() const;
     void setType(TagType tagtype);
@@ -71,8 +65,6 @@ public:
     bool operator==(const Tag &other) const;
     void guessIsTag(int threshold = IS_TAG_THRESHOLD);
     void draw(QPainter & p, int lineWidth = 3) const;
-    void drawEllipse(QPainter & p, int lineWidth = 3,
-                          bool drawVote = true) const;
 
     nlohmann::json to_json() const;
     static Tag from_json(const nlohmann::json &);
@@ -80,7 +72,6 @@ public:
 private:
     unsigned long _id;
     cv::Rect _boundingBox;
-    boost::optional<pipeline::Ellipse> _ellipse;
     TagType _tag_type = TagType::IsTag;
 
     static unsigned long generateId();

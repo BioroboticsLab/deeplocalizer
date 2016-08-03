@@ -1,6 +1,5 @@
 file(GLOB_RECURSE src RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.cpp)
-list(REMOVE_ITEM src "tagger.cpp" "preprocess.cpp" "generate_proposals.cpp"
-                     "generate_dataset.cpp" "caffe_stats.cpp")
+list(REMOVE_ITEM src "tagger.cpp" "preprocess.cpp" )
 file(GLOB hdr ${PROJECT_SOURCE_DIR}/include/deeplocalizer/tagger/*.h)
 file(GLOB_RECURSE ui RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.ui)
 file(GLOB_RECURSE qrc RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.qrc)
@@ -27,14 +26,3 @@ target_link_libraries(bb_preprocess deeplocalizer-tagger)
 install (TARGETS bb_preprocess  deeplocalizer-tagger
         RUNTIME DESTINATION bin
         LIBRARY DESTINATION lib)
-
-add_executable(generate_proposals "generate_proposals.cpp"
-     ${hdr} ${UI_RESOURCES} ${UI_HEADERS})
-
-target_link_libraries(generate_proposals deeplocalizer-tagger)
-
-
-add_executable(generate_dataset "generate_dataset.cpp"
-     ${hdr} ${UI_RESOURCES} ${UI_HEADERS})
-target_link_libraries(generate_dataset deeplocalizer-tagger)
-

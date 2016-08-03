@@ -18,21 +18,13 @@ public:
         std::random_device rd;
         std::mt19937 gen(rd());
         std::uniform_int_distribution<int> coordinate(0, 3000);
-        std::uniform_int_distribution<int> vote(500, 4000);
         std::uniform_int_distribution<int> n_tags(100, 150);
-        std::uniform_int_distribution<int> axis(5, 25);
-        std::uniform_real_distribution<double> angle(0., M_PI_2);
 
         std::vector<ImageDescPtr> descs;
         for(int i=0; i<n_images;i++) {
             std::vector<Tag> tags;
             for(int j=0; j<n_tags(gen);j++) {
-                pipeline::Ellipse ellipse(vote(gen),
-                                          cv::Point2i(coordinate(gen),  coordinate(gen)),
-                                          cv::Size(axis(gen), axis(gen)), angle(gen),
-                                          cv::Size(10*axis(gen), 10*axis(gen)));
-                tags.emplace_back(Tag(cv::Rect(coordinate(gen),coordinate(gen), TAG_WIDTH, TAG_HEIGHT),
-                                      boost::make_optional(ellipse)));
+                tags.emplace_back(Tag(cv::Rect(coordinate(gen),coordinate(gen), TAG_WIDTH, TAG_HEIGHT)));
             }
             io::path unique_path = io::unique_path("/tmp/test_tagger/%%%%%.jpeg");
             std::string filename = unique_path.string();
@@ -53,12 +45,7 @@ TEST_CASE( "ManuallyTagger ", "[ManuallyTagger]" ) {
     std::vector<ImageDesc> image_descrs{
         ImageDesc{
             "testdata/with_5_tags.jpeg",
-            std::vector<Tag>{
-                Tag{
-                    cv::Rect{},
-                    pipeline::Ellipse{}
-                }
-            }
+            std::vector<Tag>{Tag(cv::Rect{})}
         }
     };
 

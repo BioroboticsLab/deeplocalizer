@@ -3,24 +3,13 @@
 
 #include <QPainter>
 #include <mutex>
+#include <boost/optional.hpp>
 
 namespace deeplocalizer {
 
 
 using boost::optional;
 
-
-cv::Rect centerBoxAtEllipse(const cv::Rect & bb,
-                            const pipeline::Ellipse & ellipse) {
-    cv::Point2i ellCenter = ellipse.getCen();
-    cv::Point2i center{
-           bb.x + ellCenter.x,
-           bb.y + ellCenter.y,
-    };
-    cv::Point2i leftTopCorner{center.x - TAG_WIDTH / 2,
-                              center.y - TAG_HEIGHT / 2};
-    return  cv::Rect(leftTopCorner, TAG_SIZE);
-}
 
 cv::Rect centerBox(const cv::Rect & bb) {
     cv::Point center(bb.x + bb.width / 2, bb.y + bb.height / 2);
@@ -44,48 +33,11 @@ Tag::Tag() :  _id(Tag::generateId())
 {
 }
 
-Tag::Tag(const pipeline::Tag & pipetag) :  _id(Tag::generateId()) {
-    boost::optional<pipeline::Ellipse> ellipse;
-    for(auto candidate : pipetag.getCandidatesConst()) {
-        if (!ellipse) {
-            ellipse = optional<pipeline::Ellipse>(candidate.getEllipse());
-        } else if (ellipse.get() < candidate.getEllipse()) {
-            ellipse = optional<pipeline::Ellipse>(candidate.getEllipse());
-        }
-    }
-    if(ellipse) {
-        _boundingBox = centerBoxAtEllipse(pipetag.getRoi(), ellipse.get());
-        _ellipse = ellipse;
-        _ellipse.get().setCen(cv::Point2i(TAG_WIDTH/2, TAG_HEIGHT/2));
-    } else {
-        _boundingBox = centerBox(pipetag.getRoi());
-        _tag_type = TagType::NoTag;
-    }
-}
-
 Tag::Tag(cv::Rect boundingBox) :
-    Tag(boundingBox, optional<pipeline::Ellipse>())
-{
-}
-
-Tag::Tag(cv::Rect boundingBox, optional<pipeline::Ellipse> ellipse) :
         _id(Tag::generateId()),
         _boundingBox(boundingBox),
-        _ellipse(ellipse),
-        _tag_type(IsTag)
-{
-}
+        _tag_type(IsTag) { }
 
-void Tag::guessIsTag(int threshold) {
-    if(_ellipse.is_initialized() && _ellipse.get().getVote() > threshold) {
-        _tag_type = TagType::IsTag;
-    } else {
-        _tag_type = TagType::NoTag;
-    }
-}
-const optional<pipeline::Ellipse> & Tag::getEllipse () const {
-    return _ellipse;
-}
 const cv::Rect & Tag::getBoundingBox() const {
     return _boundingBox;
 }
@@ -111,18 +63,7 @@ void Tag::toggleIsTag() {
 }
 
 bool Tag::operator==(const Tag &other) const {
-    bool ellipse_match = true;
-    if (_ellipse.is_initialized() && other._ellipse.is_initialized()) {
-        auto te = _ellipse.get();
-        auto oe = other._ellipse.get();
-        ellipse_match =  te.getAngle() == oe.getAngle()
-                         && te.getVote() == oe.getVote()
-                         && te.getAxis() == oe.getAxis()
-                         && te.getCen() == oe.getCen();
-    }
-    return _ellipse.is_initialized() == other._ellipse.is_initialized() &&
-            ellipse_match &&
-            _boundingBox == other._boundingBox &&
+    return _boundingBox == other._boundingBox &&
             _tag_type == other._tag_type;
 }
 
@@ -143,31 +84,6 @@ void Tag::draw(QPainter & p, int lineWidth) const {
         p.setPen(QPen(Qt::cyan, lineWidth));
     }
     p.drawRect(QRect(bb.x, bb.y, bb.height, bb.width));
-}
-void Tag::drawEllipse(QPainter & p, int lineWidth, bool drawVote) const {
-    static const QPoint zero(0, 0);
-    if(not _ellipse) {
-        return;
-    }
-    auto e = _ellipse.get();
-    auto bb = _boundingBox;
-    p.setPen(Qt::blue);
-    QPoint center(bb.x+e.getCen().x, bb.y+e.getCen().y);
-    QFont font = p.font();
-    font.setPointSizeF(18);
-    p.setPen(Qt::blue);
-    if(drawVote) {
-        p.setFont(font);
-        p.drawText(bb.x - 10 , bb.y - 10, QString::number(e.getVote()));
-    }
-    p.setPen(QPen(Qt::blue, lineWidth));
-    p.save();
-    p.translate(center);
-    p.rotate(e.getAngle());
-    p.drawLine(-4, 0, 4, 0);
-    p.drawLine(0, 4, 0, -4);
-    p.drawEllipse(zero, int(e.getAxis().width), int(e.getAxis().height));
-    p.restore();
 }
 
 unsigned long Tag::id() const {
@@ -213,33 +129,14 @@ json Tag::to_json() const {
     jtag["x"] = this->center().x;
     jtag["y"] = this->center().y;
     jtag["tagtype"] = tagtype_to_string(_tag_type);
-    if (_ellipse) {
-        const pipeline::Ellipse & ellipse = _ellipse.get();
-        jtag["ellipse"] = {
-                {"vote", ellipse.getVote()},
-                {"center_x", ellipse.getCen().x},
-                {"center_y", ellipse.getCen().y},
-                {"axis_width", ellipse.getAxis().width},
-                {"axis_height", ellipse.getAxis().height},
-                {"angle", ellipse.getAngle()},
-        };
-    }
     return jtag;
 }
 
 Tag Tag::from_json(const json &j) {
     cv::Point2i center(j["x"], j["y"]);
-
     cv::Rect boundingBox(center.x - TAG_WIDTH/2, center.y - TAG_WIDTH/2,
                            TAG_WIDTH, TAG_HEIGHT);
-    boost::optional<pipeline::Ellipse> ellipse;
-    if (j.count("ellipse")) {
-        const json &  e = j["ellipse"];
-        ellipse = boost::optional<pipeline::Ellipse>(pipeline::Ellipse(
-                e["vote"], cv::Point2i(e["center_x"], e["center_y"]),
-                cv::Size(e["axis_width"], e["axis_height"]), e["angle"], TAG_SIZE));
-    }
-    Tag tag(boundingBox, ellipse);
+    Tag tag(boundingBox);
     tag.setType(tagtype_from_string(j["tagtype"]));
     return tag;
 }

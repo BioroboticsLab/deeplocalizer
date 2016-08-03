@@ -1,5 +1,6 @@
 #include <boost/program_options.hpp>
 
+#include <opencv2/opencv.hpp>
 #include <chrono>
 #include <thread>
 #include <mutex>

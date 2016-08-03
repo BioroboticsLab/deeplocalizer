@@ -16,11 +16,6 @@
 #include <QString>
 #include <QObject>
 
-#include <pipeline/datastructure/Tag.h>
-#include <pipeline/Preprocessor.h>
-#include <pipeline/Localizer.h>
-#include <pipeline/EllipseFitter.h>
-
 #include "Tag.h"
 #include "Image.h"
 

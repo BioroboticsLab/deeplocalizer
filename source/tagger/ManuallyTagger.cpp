@@ -5,10 +5,8 @@
 #include <boost/archive/xml_oarchive.hpp>
 #include <boost/archive/xml_iarchive.hpp>
 
-#include <pipeline/Localizer.h>
 #include "utils.h"
 #include "qt_helper.h"
-#include "ProposalGenerator.h"
 
 namespace deeplocalizer {
 
@@ -72,7 +70,7 @@ void ManuallyTagger::init() {
         if (io::exists(descr->savePath())) {
             descr = ImageDesc::load(descr->savePath());
         } else {
-            descr->setSavePathExtension(ProposalGenerator::IMAGE_DESC_EXT);
+            descr->setSavePathExtension(".proposal.json");
             if (io::exists(descr->savePath())) {
                 descr = ImageDesc::load(descr->savePath());
             }

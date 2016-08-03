@@ -12,8 +12,8 @@ namespace io = boost::filesystem;
 
 TEST_CASE( "ImageDesc", "[ImageDesc]" ) {
     std::vector<Tag> tag_vec{
-            Tag(cv::Rect{}, pipeline::Ellipse{}),
-            Tag(cv::Rect{}, optional<pipeline::Ellipse>{})
+            Tag(cv::Rect{}),
+            Tag(cv::Rect{})
     };
     auto uniquePath = io::unique_path("/tmp/%%%%%%%%%%%.binary");
     SECTION("creation") {

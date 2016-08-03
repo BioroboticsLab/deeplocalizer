@@ -8,7 +8,6 @@
 #include <json.hpp>
 
 #include "Image.h"
-#include "ProposalGenerator.h"
 #include "utils.h"
 #include "qt_helper.h"
 
@@ -19,8 +18,8 @@ using json = nlohmann::json;
 
 TEST_CASE( "JSON serialization", "[serialize]" ) {
     ImageDesc img("image_path.jpeg");
-    Tag tag(cv::Rect(30, 40, TAG_WIDTH, TAG_HEIGHT), optional<pipeline::Ellipse>());
-    Tag tag_with_ell(cv::Rect(300, 400, TAG_WIDTH, TAG_HEIGHT), optional<pipeline::Ellipse>());
+    Tag tag(cv::Rect(30, 40, TAG_WIDTH, TAG_HEIGHT));
+    Tag tag_with_ell(cv::Rect(300, 400, TAG_WIDTH, TAG_HEIGHT));
     SECTION("simple tag") {
         json j = tag.to_json();
         Tag from_json = Tag::from_json(j);

@@ -13,7 +13,6 @@
 #include <QtGui/qpainter.h>
 #include "Image.h"
 #include "qt_helper.h"
-#include "PipelineWorker.h"
 
 namespace deeplocalizer {
 
@@ -55,10 +54,8 @@ private:
     std::vector<Tag> * _tags;
     std::list<Tag> _newly_added_tags;
     std::set<unsigned long> _deleted_Ids;
-    PipelineWorker _pipeline_worker;
 
     boost::optional<Tag> getTag(int x, int y);
-    void findEllipse(Tag &&tag);
 
     template<typename T>
     void eraseTag(const unsigned long id, T& tags) {
@@ -69,10 +66,6 @@ private:
                                   }),
                    tags.end()
         );
-    }
-
-    virtual ~WholeImageWidget() {
-        _pipeline_worker.quit();
     }
 };
 }
