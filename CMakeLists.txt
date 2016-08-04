@@ -63,14 +63,10 @@ set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/ ${CMAKE_MODULE_PATH})
 find_package(OpenCV REQUIRED)
 find_package(OpenGL REQUIRED)
 find_package(Qt5Core REQUIRED)
-find_package(Qt5Core REQUIRED)
 find_package(Qt5Widgets REQUIRED)
 find_package(Qt5OpenGL REQUIRED)
 find_package(Threads REQUIRED)
 find_package(Boost COMPONENTS system filesystem serialization program_options REQUIRED)
-find_package(Glog REQUIRED)
-find_package(CUDA REQUIRED)
-find_package(HDF5 COMPONENTS C HL REQUIRED)
 
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
@@ -83,22 +79,17 @@ include_directories(
     SYSTEM ${Qt5Widgets_INCLUDE_DIRS}
     SYSTEM ${OpenCV_INCLUDE_DIRS}
     SYSTEM ${Qt5OpenGL_INCLUDE_DIRS}
-    SYSTEM ${CUDA_INCLUDE_DIRS}
     SYSTEM ${Boost_INCLUDE_DIR}
-    SYSTEM ${HDF5_INCLUDE_DIRS}
 )
 
 set(libs
     ${OpenCV_LIBS}
     ${Boost_LIBRARIES}
     ${CMAKE_THREAD_LIBS_INIT}
-    ${CUDA_LIBRARIES}
     Qt5::Core
     Qt5::Widgets
     Qt5::OpenGL
     ${OPENGL_LIBRARIES}
-    ${GLOG_LIBRARY}
-    ${HDF5_LIBRARIES}
     ${CPM_LIBRARIES}
 )
 
